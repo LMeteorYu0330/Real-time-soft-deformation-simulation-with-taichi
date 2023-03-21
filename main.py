@@ -1,5 +1,5 @@
 import taichi as ti
-import impilcit_fem as fem
+import fem_class as fem
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
@@ -18,6 +18,8 @@ if __name__ == '__main__':
     camera.fov(75)
 
     while window.running:
+        if window.is_pressed('r'):
+            mesh.reset()
         mesh.substep(1)
 
         camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)

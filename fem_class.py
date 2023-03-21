@@ -15,9 +15,11 @@ class LoadModel:
             self.mesh.verts.place({
                 'x': ti.math.vec3,
                 'v': ti.math.vec3,
-                'f': ti.math.vec3
+                'f': ti.math.vec3,
+                'ox': ti.math.vec3
             })
             self.mesh.verts.x.from_numpy(self.mesh.get_position_as_numpy())
+            self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.v.fill(0.0)
             self.mesh.verts.f.fill(0.0)
             self.indices = ti.field(ti.u32, shape=len(self.mesh.cells) * 4 * 3)
@@ -26,8 +28,10 @@ class LoadModel:
         else:
             self.mesh_rawdata = mp.load_mesh_rawdata(filename)
             self.mesh = mp.load_mesh(self.mesh_rawdata, relations=["FV"])
-            self.mesh.verts.place({'x': ti.math.vec3})
+            self.mesh.verts.place({'x': ti.math.vec3,
+                                   'ox': ti.math.vec3})
             self.mesh.verts.x.from_numpy(self.mesh.get_position_as_numpy())
+            self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
             self.indices = ti.field(ti.i32, shape=len(self.mesh.faces) * 3)
             self.init_surf_indices()
 
@@ -84,6 +88,13 @@ class Explicit(LoadModel):  # This class only for tetrahedron
         self.fem_pre_cal()
 
     @ti.kernel
+    def reset(self):
+        for vert in self.mesh.verts:
+            vert.x = vert.ox
+        self.mesh.verts.v.fill(0.0)
+        self.mesh.verts.f.fill(0.0)
+
+    @ti.kernel
     def norm_volume(self):
         for cell in self.mesh.cells:
             v = ti.Matrix.zero(ti.f32, 3, 3)
@@ -94,6 +105,7 @@ class Explicit(LoadModel):  # This class only for tetrahedron
         if self.v_norm == 1:
             for vert in self.mesh.verts:
                 vert.x *= 1000 / self.V[None]
+                vert.ox *= 1000 / self.V[None]
 
     @ti.kernel
     def fem_pre_cal(self):  # fem参数预计算
@@ -204,6 +216,13 @@ class Implicit(LoadModel):
         self.fem_pre_cal()
 
     @ti.kernel
+    def reset(self):
+        for vert in self.mesh.verts:
+            vert.x = vert.ox
+        self.mesh.verts.v.fill(0.0)
+        self.mesh.verts.f.fill(0.0)
+
+    @ti.kernel
     def norm_volume(self):
         for cell in self.mesh.cells:
             v = ti.Matrix.zero(ti.f32, 3, 3)
@@ -214,6 +233,7 @@ class Implicit(LoadModel):
         if self.v_norm == 1:
             for vert in self.mesh.verts:
                 vert.x *= 1000 / self.V[None]
+                vert.ox *= 1000 / self.V[None]
 
     @ti.kernel
     def fem_pre_cal(self):
