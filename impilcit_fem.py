@@ -168,6 +168,8 @@ class Explicit(LoadModel):  # This class only for tetrahedron
             self.fem_get_force()
             self.explicit_time_integral()
             self.boundary_condition()
+
+
 @ti.data_oriented
 class Implicit(LoadModel):
     def __init__(self, filename, v_norm=1):
