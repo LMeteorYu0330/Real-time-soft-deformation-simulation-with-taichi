@@ -5,7 +5,7 @@ if __name__ == '__main__':
     ti.init(arch=ti.gpu)
     obj = "model/liver/liver0.node"
     # obj = "model/equipment/Scissors.stl"
-    mesh = fem.Simulation(obj, v_norm=1)
+    mesh = fem.Implicit(obj, v_norm=1)
 
     window = ti.ui.Window("FEM", (768, 768), vsync=False)
     canvas = window.get_canvas()
@@ -16,16 +16,12 @@ if __name__ == '__main__':
     camera.position(-0.2, 0.0, 0.2)
     camera.lookat(0.0, 0.0, 0.0)
     camera.fov(75)
-    running_label = False
 
     while window.running:
-        mesh.fem_runtime_cal()
+        mesh.substep(1)
+        # mesh.fem_get_force()
         # mesh.explicit_time_integral()
         # mesh.boundary_condition()
-        mesh.compute_K()
-        mesh.jacobi(100, 1e-5)
-        mesh.implicit_time_integral()
-        mesh.boundary_condition()
         # print(mesh.K[0, 0])
 
         camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)
