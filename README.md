@@ -4,8 +4,7 @@
 * 参考taichi的ti example fem的算法  
 通过将mesh传入explicit类或者implicit类来选择显式或者隐式  
 类的定义在fem_class.py中  
-
-![img] (https://github.com/LMeteorYu0330/3d_implicit_fem/blob/master/images/1.gif)
+![image](https://github.com/LMeteorYu0330/3d_implicit_fem/blob/master/images/1.gif)
 ## 现存的问题
 无法修改本构模型，修改本构模型导致模型炸裂，原因还在查找中
 
