@@ -63,7 +63,7 @@ class Explicit(LoadModel):  # This class only for tetrahedron
         super().__init__(filename)
         self.v_norm = v_norm
 
-        self.dt = 1.0 / 30 / 30000
+        self.dt = 7e-4
         self.gravity = ti.Vector([0.0, -9.8, 0.0])
         self.e = 2e6  # 杨氏模量
         self.nu = 0.1  # 泊松系数
@@ -121,9 +121,9 @@ class Explicit(LoadModel):  # This class only for tetrahedron
                         = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
             self.F[cell.id] = Ds @ self.B[cell.id]
             self.E[cell.id] = 0.5 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
-            # U, sig, V = self.ssvd(self.F[cell.id])
-            # P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose())
-            P = self.F[cell.id] @ (2 * self.mu * self.E[cell.id] + self.la * self.E[cell.id].trace() * self.I)
+            U, sig, V = self.ssvd(self.F[cell.id])
+            P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose())
+            # P = self.F[cell.id] @ (2 * self.mu * self.E[cell.id] + self.la * self.E[cell.id].trace() * self.I)
             H = -self.W[cell.id] * P @ self.B[cell.id].transpose()
             for i in ti.static(range(3)):
                 fi = ti.Vector([H[0, i], H[1, i], H[2, i]])
@@ -146,12 +146,12 @@ class Explicit(LoadModel):  # This class only for tetrahedron
     @ti.kernel
     def explicit_time_integral(self):
         for vert in self.mesh.verts:
-            vert.v += self.dt * vert.f / self.m[vert.id]
+            vert.v += self.dt * vert.f / self.m[vert.id] * 0.0000125
             vert.x += vert.v * self.dt
 
     @ti.kernel
     def boundary_condition(self):
-        bounds = ti.Vector([1.0, 0.06, 1.0])
+        bounds = ti.Vector([1.0, 0.1, 1.0])
         for vert in self.mesh.verts:
             for i in ti.static(range(3)):
                 if vert.x[i] < -bounds[i]:
@@ -163,7 +163,11 @@ class Explicit(LoadModel):  # This class only for tetrahedron
                     if vert.v[i] > 0.0:
                         vert.v[i] = 0.0
 
-
+    def substep(self, step):
+        for i in range(step):
+            self.fem_get_force()
+            self.explicit_time_integral()
+            self.boundary_condition()
 @ti.data_oriented
 class Implicit(LoadModel):
     def __init__(self, filename, v_norm=1):
@@ -172,7 +176,7 @@ class Implicit(LoadModel):
 
         self.dt = 1.0 / 30
         self.gravity = ti.Vector([0.0, -9.8, 0.0])
-        self.e = 2e6  # 杨氏模量
+        self.e = 1e5  # 杨氏模量
         self.nu = 0.1  # 泊松系数
         self.mu = self.e / (2 * (1 + self.nu))
         self.la = self.e * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
@@ -195,6 +199,7 @@ class Implicit(LoadModel):
 
         self.mul_ans = ti.Vector.field(3, dtype=ti.f32, shape=self.vert_num)
         self.norm_volume()
+        self.fem_pre_cal()
 
     @ti.kernel
     def norm_volume(self):
@@ -231,7 +236,7 @@ class Implicit(LoadModel):
                     Ds[j, i] \
                         = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
             self.F[cell.id] = Ds @ self.B[cell.id]
-            # self.E[cell.id] = 0.5 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
+            self.E[cell.id] = 0.5 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
             U, sig, V = self.ssvd(self.F[cell.id])
             P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose())
             # P = self.F[cell.id] @ (2 * self.mu * self.E[cell.id] + self.la * self.E[cell.id].trace() * self.I)

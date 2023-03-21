@@ -19,10 +19,6 @@ if __name__ == '__main__':
 
     while window.running:
         mesh.substep(1)
-        # mesh.fem_get_force()
-        # mesh.explicit_time_integral()
-        # mesh.boundary_condition()
-        # print(mesh.K[0, 0])
 
         camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)
         scene.set_camera(camera)
