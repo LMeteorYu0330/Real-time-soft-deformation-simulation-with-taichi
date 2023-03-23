@@ -190,11 +190,11 @@ class Implicit(LoadModel):
 
         self.dt = 1.0 / 30
         self.gravity = ti.Vector([0.0, -9.8, 0.0])
-        self.e = 3e5  # 杨氏模量
+        self.e = 7e6  # 杨氏模量
         self.nu = 0.1  # 泊松系数
         self.mu = self.e / (2 * (1 + self.nu))
         self.la = self.e * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
-        self.density = 1e5
+        self.density = 5e5
 
         self.cell_num = len(self.mesh.cells)
         self.V = ti.field(dtype=ti.f32, shape=())
