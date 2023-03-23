@@ -364,7 +364,7 @@ class Implicit(LoadModel):
             beta = r_2_new / r_2
             self.add(self.p0, self.r0, beta, self.p0)
         self.add(self.mesh.verts.x, self.mesh.verts.x, self.dt, self.mesh.verts.v)
-        print(r_2_new)
+        # print(r_2_new)
 
     @ti.kernel
     def add(self, ans: ti.template(), a: ti.template(), k: ti.f32, x3: ti.template()):
