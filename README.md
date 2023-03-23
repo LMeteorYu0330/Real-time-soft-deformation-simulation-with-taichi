@@ -7,7 +7,7 @@
 ## 效果预览
 ![image](https://github.com/LMeteorYu0330/3d_implicit_fem/blob/master/images/1.gif)
 ## 现存的问题
-无法修改本构模型，修改本构模型导致模型炸裂，原因还在查找中
+STVK本构模型表现不好
 
 ## 后续计划
 * 1、加入自碰撞和碰撞检测。
