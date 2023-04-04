@@ -1,12 +1,13 @@
 import taichi as ti
 import fem_class as fem
+import collide_detection as cd
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
     obj = "model/liver/liver0.node"
     # obj = "model/equipment/Scissors.stl"
     mesh = fem.Implicit(obj, v_norm=1)
-
+    bvt = cd.aabb_obj(mesh)
     window = ti.ui.Window("FEM", (768, 768), vsync=False)
     canvas = window.get_canvas()
     canvas.set_background_color(color=(1, 1, 1))
@@ -21,7 +22,6 @@ if __name__ == '__main__':
         if window.is_pressed('r'):
             mesh.reset()
         mesh.substep(1)
-
         camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)
         scene.set_camera(camera)
         scene.ambient_light((0.5, 0.5, 0.5))
