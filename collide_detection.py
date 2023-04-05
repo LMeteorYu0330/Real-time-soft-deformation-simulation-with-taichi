@@ -31,6 +31,7 @@ class aabb_obj:
     def aabb_tree(self):
         pass
 
+
 if __name__ == '__main__':
     ti.init(arch=ti.cuda)
     obj = "model/liver/liver0.node"
