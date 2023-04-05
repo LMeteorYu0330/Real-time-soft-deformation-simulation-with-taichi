@@ -36,9 +36,8 @@ class LoadModel:
             self.init_surf_indices()
 
         self.vert_num = len(self.mesh.verts)
-        self.center = ti.Vector.field(3, ti.f32, shape=())
+        self.center = ti.Vector.field(3, ti.f32, shape=1)
         self.I = ti.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]], ti.i32)
-        self.cal_barycenter()
 
     @ti.kernel
     def init_surf_indices(self):
@@ -56,9 +55,10 @@ class LoadModel:
 
     @ti.kernel
     def cal_barycenter(self):
+        self.center[0].fill(0)
         for i in self.mesh.verts.x:
-            self.center[None] += self.mesh.verts.x[i]
-        self.center[None] /= self.vert_num
+            self.center[0] += self.mesh.verts.x[i]
+        self.center[0] /= self.vert_num
 
 
 @ti.data_oriented
@@ -335,7 +335,7 @@ class Implicit(LoadModel):
                     dF = dD @ B_c
                     dE = 0.5 * (dF.transpose() @ F_c + F_c.transpose() @ dF)
                     dP = dF @ (2 * self.mu * E_c + self.la * E_c.trace() * self.I) + F_c @ (
-                                2 * self.mu * dE + self.la * dE.trace() * self.I)
+                            2 * self.mu * dE + self.la * dE.trace() * self.I)
                     dH = -W_c * dP @ B_c.transpose()
                     for i in ti.static(range(3)):
                         for j in ti.static(range(3)):
