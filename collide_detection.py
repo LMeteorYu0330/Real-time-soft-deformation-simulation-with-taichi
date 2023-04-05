@@ -5,11 +5,12 @@ import fem_class as fem
 
 @ti.data_oriented
 class aabb_obj:
-    def __init__(self, verts):
+    def __init__(self, verts, layer_num=4):
         self.aabb_root = ti.Vector.field(3, ti.f32, shape=8)
         self.min_x = ti.Vector.field(3, ti.f32, shape=1)
         self.max_x = ti.Vector.field(3, ti.f32, shape=1)
         self.verts = verts
+        self.layer_num = layer_num
 
     def get_maxmin(self):
         x_np = self.verts.x.to_numpy()
@@ -28,7 +29,7 @@ class aabb_obj:
         self.aabb_root[7] = self.max_x[0]
 
     @ti.kernel
-    def aabb_tree(self):
+    def get_aabb_tree(self):
         pass
 
 
