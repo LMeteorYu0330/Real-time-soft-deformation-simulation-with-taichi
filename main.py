@@ -6,8 +6,9 @@ if __name__ == '__main__':
     ti.init(arch=ti.gpu)
     obj = "model/liver/liver0.node"
     # obj = "model/equipment/Scissors.stl"
-    mesh = fem.Implicit(obj, v_norm=1)
-    bvt = cd.aabb_obj(mesh.mesh.verts)
+    model = fem.Implicit(obj, v_norm=1)
+    # model = fem.LoadModel(obj)
+    bvt = cd.aabb_obj(model.mesh.verts)
     window = ti.ui.Window("FEM", (768, 768), vsync=False)
     canvas = window.get_canvas()
     canvas.set_background_color(color=(1, 1, 1))
@@ -20,18 +21,17 @@ if __name__ == '__main__':
 
     while window.running:
         if window.is_pressed('r'):
-            mesh.reset()
-        mesh.substep(1)
+            model.reset()
+        model.substep(1)
 
-        bvt.get_maxmin()
-        bvt.get_aabb_root()
+        bvt.run()
 
         camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)
         scene.set_camera(camera)
         scene.ambient_light((0.5, 0.5, 0.5))
         scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
-        scene.mesh(mesh.mesh.verts.x, mesh.indices, color=(1.0, 0.3, 0.3))
-        # scene.particles(bvt.aabb_root, 0.005, (0.9, 0.9, 0.9))
-        # scene.lines(bvt.aabb_root, 0.1, color=(0.5, 0.5, 0.5))
+        scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
+        scene.particles(bvt.aabb_root, 0.005, (0.9, 0.9, 0.9))
+        scene.lines(bvt.aabb_root, 0.1, color=(0.5, 0.5, 0.5))
         canvas.scene(scene)
         window.show()
