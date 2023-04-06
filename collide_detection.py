@@ -31,8 +31,19 @@ class aabb_obj:
 
     @ti.kernel
     def get_aabb_tree(self):
-        for layer in range(1, self.layer_num):
-            pass
+        base_z = self.aabb_root[1] - self.aabb_tree[0]
+        base_x = self.aabb_root[4] - self.aabb_tree[0]
+        base_y = self.aabb_root[2] - self.aabb_tree[0]
+        for layer in ti.static(range(1, self.layer_num + 1)):
+            m = 2 ** layer
+            for node in ti.static(range(1, 1 + 2 ** (3 * (layer - 1)))):
+                n1 =
+
+                k2 = (node % (4 ** (layer - 1)))
+                n2 = 2 *
+
+                n3 = 2 * (node % (m / 2)) - 1
+                self.aabb_tree[layer+node] = self. aabb_tree[0] + [n1 / m * base_x, n2 / m * base_y, n3 / m * base_z]
 
     def run(self):
         self.get_root()
