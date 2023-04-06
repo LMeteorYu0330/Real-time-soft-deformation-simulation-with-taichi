@@ -40,7 +40,7 @@ class aabb_obj:
                 n1 =
 
                 k2 = (node % (4 ** (layer - 1)))
-                n2 = 2 *
+                n2 =
 
                 n3 = 2 * (node % (m / 2)) - 1
                 self.aabb_tree[layer+node] = self. aabb_tree[0] + [n1 / m * base_x, n2 / m * base_y, n3 / m * base_z]
