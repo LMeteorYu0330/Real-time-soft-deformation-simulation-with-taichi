@@ -22,8 +22,8 @@ class aabb_obj:
     def get_aabb_root(self):
         self.aabb_root[0] = self.aabb_tree[0]
         self.aabb_root[1] = [self.aabb_tree[0].x, self.aabb_tree[0].y, self.aabb_tree[1].z]
-        self.aabb_root[2] = [self.aabb_tree[0].x, self.aabb_tree[1].y, self.aabb_tree[1].z]
-        self.aabb_root[3] = [self.aabb_tree[0].x, self.aabb_tree[1].y, self.aabb_tree[0].z]
+        self.aabb_root[2] = [self.aabb_tree[0].x, self.aabb_tree[1].y, self.aabb_tree[0].z]
+        self.aabb_root[3] = [self.aabb_tree[0].x, self.aabb_tree[1].y, self.aabb_tree[1].z]
         self.aabb_root[4] = [self.aabb_tree[1].x, self.aabb_tree[0].y, self.aabb_tree[0].z]
         self.aabb_root[5] = [self.aabb_tree[1].x, self.aabb_tree[0].y, self.aabb_tree[1].z]
         self.aabb_root[6] = [self.aabb_tree[1].x, self.aabb_tree[1].y, self.aabb_tree[0].z]
