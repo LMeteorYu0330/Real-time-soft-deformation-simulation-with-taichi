@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.data_oriented
 class aabb_obj:
-    def __init__(self, verts, layer_num=2):
+    def __init__(self, verts, layer_num=3):
         self.verts = verts
         self.layer_num = layer_num
 
