@@ -1,15 +1,13 @@
 import taichi as ti
-import numpy as np
-import fem_class as fem
 
 
 @ti.data_oriented
 class aabb_obj:
-    def __init__(self, verts, layer_num=3):
+    def __init__(self, verts, layer_num=2):
         self.verts = verts
         self.layer_num = layer_num
 
-        self.tree_size = int((8 ** (self.layer_num - 1) + 13) / 7)
+        self.tree_size = int((8 ** self.layer_num + 13) / 7)
         self.aabb_root = ti.Vector.field(3, ti.f32, shape=8)
         self.aabb_tree = ti.Vector.field(3, ti.f32, shape=self.tree_size)
 
@@ -31,19 +29,20 @@ class aabb_obj:
 
     @ti.kernel
     def get_aabb_tree(self):
-        base_z = self.aabb_root[1] - self.aabb_tree[0]
-        base_x = self.aabb_root[4] - self.aabb_tree[0]
-        base_y = self.aabb_root[2] - self.aabb_tree[0]
+        base_z = (self.aabb_root[1] - self.aabb_tree[0]).z
+        base_x = (self.aabb_root[4] - self.aabb_tree[0]).x
+        base_y = (self.aabb_root[2] - self.aabb_tree[0]).y
+        layer_node_num = 1
         for layer in ti.static(range(1, self.layer_num + 1)):
             m = 2 ** layer
-            for node in ti.static(range(1, 1 + 2 ** (3 * (layer - 1)))):
-                n1 =
-
+            for node in ti.static(range(1, 1 + (2 ** (3 * (layer - 1))))):
+                n1 = 2 * ti.ceil(node / (4 ** (layer - 1))) - 1
                 k2 = (node % (4 ** (layer - 1)))
-                n2 =
-
-                n3 = 2 * (node % (m / 2)) - 1
-                self.aabb_tree[layer+node] = self. aabb_tree[0] + [n1 / m * base_x, n2 / m * base_y, n3 / m * base_z]
+                n2 = 2 * int(k2 / (m / 2) + 1) - 1
+                n3 = 2 * (node % (m / 2) + 1) - 1
+                self.aabb_tree[layer_node_num + node] = \
+                    self.aabb_tree[0] + [n1 / m * base_x, n2 / m * base_y, n3 / m * base_z]
+            layer_node_num += (2 ** (3 * (layer - 1)))
 
     def run(self):
         self.get_root()
@@ -51,8 +50,3 @@ class aabb_obj:
         self.get_aabb_tree()
 
 
-if __name__ == '__main__':
-    ti.init(arch=ti.cuda)
-    obj = "model/liver/liver0.node"
-    mesh = fem.Implicit(obj, v_norm=1)
-    bvt = aabb_obj(mesh.mesh.verts)
