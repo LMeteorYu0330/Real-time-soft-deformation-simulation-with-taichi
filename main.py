@@ -34,8 +34,8 @@ if __name__ == '__main__':
             model.reset()
         model.substep(1)
 
-        bvt_obj.run()
-        bvt_equipment.run()
+        # bvt_obj.run()
+        # bvt_equipment.run()
 
         hap.run()
 
