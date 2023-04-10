@@ -350,6 +350,7 @@ class Implicit(LoadModel):
         r_2 = self.dot(self.r0, self.r0)
         r_2_init = r_2
         r_2_new = r_2
+        i=0
         for _ in ti.static(range(n_iter)):
             # self.mat_mul_STVK(self.mul_ans, self.p0)
             self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
@@ -363,8 +364,9 @@ class Implicit(LoadModel):
                 break
             beta = r_2_new / r_2
             self.add(self.p0, self.r0, beta, self.p0)
+            i+=1
         self.add(self.mesh.verts.x, self.mesh.verts.x, self.dt, self.mesh.verts.v)
-        # print(r_2_new)
+        print(i)
 
     @ti.kernel
     def add(self, ans: ti.template(), a: ti.template(), k: ti.f32, x3: ti.template()):
@@ -397,7 +399,7 @@ class Implicit(LoadModel):
             self.fem_get_force_sim_Co_rotated()
             # self.fem_get_force_STVK()
             self.fem_get_b()
-            self.cg(3, 1e-5)
+            self.cg(5, 0.5)
             self.boundary_condition()
 
     @ti.func

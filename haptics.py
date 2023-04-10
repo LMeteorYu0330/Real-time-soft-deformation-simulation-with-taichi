@@ -39,15 +39,16 @@ class haptices:
 
     def get_mat(self):
         self.mat_row = np.array(ph.get_transform()).reshape(4, -1)
+
+    @ti.kernel
+    def model_transpose(self, mat: ti.types.ndarray(dtype=ti.f32, ndim=2)):
         for i in range(4):
             for j in range(4):
                 if i == 3 and j != 3:
-                    self.mat[0][i, j] = self.mat_row[i, j] * 0.01
+                    self.mat[0][i, j] = mat[i, j] * 0.01
                 else:
-                    self.mat[0][i, j] = self.mat_row[i, j]
+                    self.mat[0][i, j] = mat[i, j]
 
-    @ti.kernel
-    def model_transpose(self):
         for vert in self.verts.ox:
             X = ti.Vector([self.verts.ox[vert].x, self.verts.ox[vert].y, self.verts.ox[vert].z, 1])
             T = X @ self.mat[0]
@@ -58,7 +59,7 @@ class haptices:
 
     def run(self):
         self.get_mat()
-        self.model_transpose()
+        self.model_transpose(self.mat_row)
 
 
 if __name__ == '__main__':
