@@ -34,6 +34,7 @@ if __name__ == '__main__':
             model.reset()
         if window.is_pressed(ti.ui.ESCAPE):
             break
+
         model.substep(1)
 
         bvt_obj.run()
