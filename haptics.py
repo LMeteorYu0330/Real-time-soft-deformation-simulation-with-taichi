@@ -53,9 +53,9 @@ class haptices:
             X = ti.Vector([self.verts.ox[vert].x, self.verts.ox[vert].y, self.verts.ox[vert].z, 1])
             T = X @ self.mat[0]
             # print(T)
-            self.verts.x[vert].x = -T[0]
+            self.verts.x[vert].x = T[0]
             self.verts.x[vert].y = T[1] + 0.5
-            self.verts.x[vert].z = -T[2]
+            self.verts.x[vert].z = T[2]
 
     def run(self):
         self.get_mat()

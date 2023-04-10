@@ -25,7 +25,7 @@ if __name__ == '__main__':
     scene = ti.ui.Scene()
     camera = ti.ui.Camera()
     camera.up(0, 1, 0)
-    camera.position(0.0, 0.0, -0.2)
+    camera.position(0.0, 0.0, 0.35)
     camera.lookat(0.0, 0.0, 0.0)
     camera.fov(75)
 
