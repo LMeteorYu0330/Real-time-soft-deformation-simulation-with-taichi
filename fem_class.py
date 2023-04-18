@@ -11,7 +11,7 @@ class LoadModel:
         model_type = filename.split('.')[-1]
         if model_type == "node":
             self.mesh_rawdata = mp.load_mesh_rawdata(filename)
-            self.mesh = mp.load_mesh(self.mesh_rawdata, relations=["CV", "VV", "CE", "EV"])
+            self.mesh = mp.load_mesh(self.mesh_rawdata, relations=["CV", "VV", "CE", "EV", "FV"])
             self.mesh.verts.place({
                 'x': ti.math.vec3,
                 'v': ti.math.vec3,

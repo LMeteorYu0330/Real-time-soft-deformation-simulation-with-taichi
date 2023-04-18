@@ -26,13 +26,15 @@ def ggui_run(window, canvas, scene, camera):
     scene.particles(bvt_obj.aabb_tree, 0.002, (0.9, 0.9, 0.9), index_offset=2, index_count=bvt_obj.tree_size - 2)
     scene.particles(bvt_equipment.aabb_tree, 0.002, (0.9, 0.9, 0.9),
                     index_offset=2, index_count=bvt_equipment.tree_size - 2)
+    # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
+    # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
     canvas.scene(scene)
     window.show()
 
 
 if __name__ == '__main__':
     ti.init(arch=ti.cuda)
-    # ph.init()
+    ph.init()
     window, canvas, scene, camera = ggui_init()
 
     obj = "model/liver/liver0.node"
@@ -41,12 +43,10 @@ if __name__ == '__main__':
     model = fem.Implicit(obj, v_norm=1)
     equipment_model = fem.LoadModel(equipment)
 
-    bvt_obj = cd.aabb_obj(model.mesh.verts)
-    bvt_equipment = cd.aabb_obj(equipment_model.mesh.verts)
+    bvt_obj = cd.aabb_obj(model.mesh)
+    bvt_equipment = cd.aabb_obj(equipment_model.mesh)
 
     hap = ha.haptices(equipment_model.mesh.verts)
-
-
 
     while window.running:
         if window.is_pressed('r'):
