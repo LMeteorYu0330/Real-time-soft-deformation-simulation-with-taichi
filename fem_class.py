@@ -404,7 +404,7 @@ class Implicit(LoadModel):
         r_2_new = r_2
         for _ in ti.static(range(n_iter)):
             # self.mat_mul_STVK(self.mul_ans, self.p0)
-            self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.mesh.verts.v)
+            self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.p0)
             # self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
             dot_ans = self.dot(self.p0, self.mul_ans)
             alpha = r_2_new / (dot_ans + epsilon)
