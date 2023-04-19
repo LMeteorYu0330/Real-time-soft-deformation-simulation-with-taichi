@@ -1,3 +1,5 @@
+import time
+
 import taichi as ti
 import fem_class as fem
 import collide_detection as cd
@@ -23,9 +25,9 @@ def ggui_run(window, canvas, scene, camera):
     scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
     scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
-    scene.particles(bvt_obj.aabb_tree, 0.002, (0.9, 0.9, 0.9), index_offset=2, index_count=bvt_obj.tree_size - 2)
-    scene.particles(bvt_equipment.aabb_tree, 0.002, (0.9, 0.9, 0.9),
-                    index_offset=2, index_count=bvt_equipment.tree_size - 2)
+    # scene.particles(bvt_obj.aabb_tree, 0.002, (0.9, 0.9, 0.9), index_offset=2, index_count=bvt_obj.tree_size - 2)
+    # scene.particles(bvt_equipment.aabb_tree, 0.002, (0.9, 0.9, 0.9),
+    #                 index_offset=2, index_count=bvt_equipment.tree_size - 2)
     # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
     canvas.scene(scene)
@@ -34,7 +36,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.cuda)
-    ph.init()
+    # ph.init()
     window, canvas, scene, camera = ggui_init()
 
     obj = "model/liver/liver0.node"

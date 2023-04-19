@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.data_oriented
 class aabb_obj:
-    def __init__(self, meshs, layer_num=3):
+    def __init__(self, meshs, layer_num=4):
         self.meshs = meshs
         self.verts = self.meshs.verts
         self.faces = self.meshs.faces
@@ -60,7 +60,7 @@ class aabb_obj:
 
     @ti.kernel
     def box_for_draw(self):
-        for i in range(0, self.face_num):
+        for i in range(0, int(self.face_num)):
             self.min_box_for_draw[i * 24 + 0] = self.min_box[i * 8 + 0]
             self.min_box_for_draw[i * 24 + 1] = self.min_box[i * 8 + 4]
             self.min_box_for_draw[i * 24 + 2] = self.min_box[i * 8 + 4]
@@ -87,7 +87,7 @@ class aabb_obj:
             self.min_box_for_draw[i * 24 + 23] = self.min_box[i * 8 + 5]
 
     def run(self):
-        # self.get_min_box()
-        # self.box_for_draw()
-        self.get_root()
-        self.get_aabb_tree()
+        self.get_min_box()
+        self.box_for_draw()
+        # self.get_root()
+        # self.get_aabb_tree()

@@ -1,6 +1,6 @@
 import taichi as ti
 import meshtaichi_patcher as mp
-
+import math
 
 @ti.data_oriented
 class LoadModel:
@@ -267,6 +267,27 @@ class Implicit(LoadModel):
                 self.mesh.verts.f[cell.verts[3].id] += -fi
 
     @ti.kernel
+    def fem_get_force_Neo_Hookean(self):  # 实时力计算
+        for vert in self.mesh.verts:
+            vert.f = self.gravity * self.m[vert.id]
+        for cell in self.mesh.cells:
+            Ds = ti.Matrix.zero(ti.f32, 3, 3)
+            for i in ti.static(range(3)):
+                for j in ti.static(range(3)):
+                    Ds[j, i] \
+                        = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
+            self.F[cell.id] = Ds @ self.B[cell.id]
+            J = ti.max(self.F[cell.id].determinant(), 0.01)
+            logJ = ti.log(J) / ti.log(10)
+            F_inv_tran = self.F[cell.id].inverse().transpose()
+            P = self.mu * (self.F[cell.id] - F_inv_tran) + self.la * logJ * F_inv_tran
+            H = -self.W[cell.id] * P @ self.B[cell.id].transpose()
+            for i in ti.static(range(3)):
+                fi = ti.Vector([H[0, i], H[1, i], H[2, i]])
+                self.mesh.verts.f[cell.verts[i].id] += fi
+                self.mesh.verts.f[cell.verts[3].id] += -fi
+
+    @ti.kernel
     def fem_get_force_STVK(self):  # 实时力计算
         for vert in self.mesh.verts:
             vert.f = self.gravity * self.m[vert.id]
@@ -286,7 +307,7 @@ class Implicit(LoadModel):
                 self.mesh.verts.f[cell.verts[3].id] += -fi
 
     @ti.kernel
-    def fem_get_b(self):  # 取初始值x=xn,计算一阶梯度
+    def fem_get_b(self):
         for vert in self.mesh.verts:
             self.b[vert.id] = self.m[vert.id] * vert.v + self.dt * vert.f
 
@@ -342,9 +363,40 @@ class Implicit(LoadModel):
                             tmp = (vel[verts[i].id][j] - vel[verts[3].id][j])
                             ret[verts[u].id][d] += -self.dt ** 2 * dH[j, i] * tmp
 
+    @ti.kernel
+    def mat_mul_sim_Neo_Hookean(self, ret: ti.template(), vel: ti.template()):
+        for vert in self.mesh.verts:
+            ret[vert.id] = vel[vert.id] * self.m[vert.id]
+        for cell in self.mesh.cells:
+            verts = cell.verts
+            W_c = self.W[cell.id]
+            B_c = self.B[cell.id]
+            F = self.F[cell.id]
+            J = ti.max(F.determinant(), 0.01)
+            logJ = ti.log(J) / ti.log(10)
+            F_inv_tran = F.inverse().transpose()
+            for u in ti.static(range(4)):
+                for d in (range(3)):
+                    dD = ti.Matrix.zero(ti.f32, 3, 3)
+                    if u == 3:
+                        for j in ti.static(range(3)):
+                            dD[d, j] = -1
+                    else:
+                        dD[d, u] = 1
+                    dF = dD @ B_c
+                    term = (F.inverse() @ dF).trace() * F_inv_tran
+                    FDFF = F_inv_tran @ dF.transpose() @ F_inv_tran
+                    dP = self.mu * dF + (self.mu - self.la * logJ) * FDFF + self.la * term
+                    dH = -W_c * dP @ B_c.transpose()
+                    for i in ti.static(range(3)):
+                        for j in ti.static(range(3)):
+                            tmp = (vel[verts[i].id][j] - vel[verts[3].id][j])
+                            ret[verts[u].id][d] += -self.dt ** 2 * dH[j, i] * tmp
+
     def cg(self, n_iter, epsilon):
         # self.mat_mul_STVK(self.mul_ans, self.mesh.verts.v)
-        self.mat_mul_sim_Co_rotated(self.mul_ans, self.mesh.verts.v)
+        # self.mat_mul_sim_Co_rotated(self.mul_ans, self.mesh.verts.v)
+        self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.mesh.verts.v)
         self.add(self.r0, self.b, -1, self.mul_ans)
         self.p0.copy_from(self.r0)
         r_2 = self.dot(self.r0, self.r0)
@@ -352,7 +404,8 @@ class Implicit(LoadModel):
         r_2_new = r_2
         for _ in ti.static(range(n_iter)):
             # self.mat_mul_STVK(self.mul_ans, self.p0)
-            self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
+            self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.mesh.verts.v)
+            # self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
             dot_ans = self.dot(self.p0, self.mul_ans)
             alpha = r_2_new / (dot_ans + epsilon)
             self.add(self.mesh.verts.v, self.mesh.verts.v, alpha, self.p0)
@@ -393,8 +446,9 @@ class Implicit(LoadModel):
 
     def substep(self, step):
         for i in range(step):
-            self.fem_get_force_sim_Co_rotated()
+            # self.fem_get_force_sim_Co_rotated()
             # self.fem_get_force_STVK()
+            self.fem_get_force_Neo_Hookean()
             self.fem_get_b()
             self.cg(5, 0.5)
             self.boundary_condition()
