@@ -28,8 +28,13 @@ def ggui_run(window, canvas, scene, camera):
     # scene.particles(bvt_obj.aabb_tree, 0.002, (0.9, 0.9, 0.9), index_offset=2, index_count=bvt_obj.tree_size - 2)
     # scene.particles(bvt_equipment.aabb_tree, 0.002, (0.9, 0.9, 0.9),
     #                 index_offset=2, index_count=bvt_equipment.tree_size - 2)
-    # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
-    # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
+    scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
+    scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
+    # scene.particles(bvt_obj.model.center, 0.02, (0.9, 0.9, 0.9))
+    # scene.particles(bvt_obj.layer1_box, 0.008, (0.9, 0.9, 0.9))
+    scene.lines(bvt_obj.layer1_box_for_draw, width=1, color=(0, 0, 0))
+    scene.lines(bvt_equipment.layer1_box_for_draw, width=1, color=(0, 0, 0))
+    # scene.particles(bvt_obj.test_box, 0.008, (0.9, 0.9, 0.9))
     canvas.scene(scene)
     window.show()
 
@@ -45,8 +50,8 @@ if __name__ == '__main__':
     model = fem.Implicit(obj, v_norm=1)
     equipment_model = fem.LoadModel(equipment)
 
-    bvt_obj = cd.aabb_obj(model.mesh)
-    bvt_equipment = cd.aabb_obj(equipment_model.mesh)
+    bvt_obj = cd.aabb_obj(model)
+    bvt_equipment = cd.aabb_obj(equipment_model, layer_num=2)
 
     hap = ha.haptices(equipment_model.mesh.verts)
 

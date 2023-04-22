@@ -3,45 +3,23 @@ import taichi as ti
 
 @ti.data_oriented
 class aabb_obj:
-    def __init__(self, meshs, layer_num=4):
-        self.meshs = meshs
-        self.verts = self.meshs.verts
-        self.faces = self.meshs.faces
+    def __init__(self, model, layer_num=3):
+        self.model = model
+        self.mesh = self.model.mesh
+        self.verts = self.mesh.verts
+        self.faces = self.mesh.faces
         self.layer_num = layer_num
         self.face_num = len(self.faces)
 
         self.min_box = ti.Vector.field(3, ti.f32, shape=self.face_num * 8)
         self.min_box_for_draw = ti.Vector.field(3, ti.f32, shape=self.face_num * 24)
-        self.tree_size = int((8 ** self.layer_num + 13) / 7)
-        self.aabb_root = ti.Vector.field(3, ti.f32, shape=8)
-        self.aabb_tree = ti.Vector.field(3, ti.f32, shape=self.tree_size)
-        self.box_edge_len = ti.Vector.field(3, ti.f32, shape=1)
-
-    def get_root(self):
-        x_np = self.verts.x.to_numpy()
-        self.aabb_tree[0] = x_np.min(0)
-        self.aabb_tree[1] = x_np.max(0)
+        self.aabb_tree_num = ti.Vector.field(layer_num, ti.f32, shape=self.face_num)
+        self.face_barycenter = ti.Vector.field(3, ti.f32, shape=self.face_num)
+        self.layer1_box = ti.Vector.field(3, ti.f32, shape=8 * 8)
+        self.layer1_box_for_draw = ti.Vector.field(3, ti.f32, shape=8 * 24)
 
     @ti.kernel
-    def get_aabb_tree(self):
-        self.box_edge_len[0].x = self.aabb_tree[1].x - self.aabb_tree[0].x
-        self.box_edge_len[0].y = self.aabb_tree[1].y - self.aabb_tree[0].y
-        self.box_edge_len[0].z = self.aabb_tree[1].z - self.aabb_tree[0].z
-        layer_node_num = 1
-        for layer in ti.static(range(1, self.layer_num + 1)):
-            m = 2 ** layer
-            for node in ti.static(range(1, 1 + (2 ** (3 * (layer - 1))))):
-                n1 = 2 * ti.ceil(node / (4 ** (layer - 1))) - 1
-                k2 = (node % (4 ** (layer - 1)))
-                n2 = 2 * int(k2 / (m / 2) + 1) - 1
-                n3 = 2 * (node % (m / 2) + 1) - 1
-                self.aabb_tree[layer_node_num + node] = \
-                    self.aabb_tree[0] + \
-                    [n1 / m * self.box_edge_len[0].x, n2 / m * self.box_edge_len[0].y, n3 / m * self.box_edge_len[0].z]
-            layer_node_num += (2 ** (3 * (layer - 1)))
-
-    @ti.kernel
-    def get_min_box(self):
+    def get_box(self):
         for face in self.faces:
             MAX = ti.max(self.verts.x[face.verts[0].id],
                          self.verts.x[face.verts[1].id],
@@ -57,6 +35,76 @@ class aabb_obj:
             self.min_box[face.id * 8 + 5] = [MAX.x, MIN.y, MAX.z]
             self.min_box[face.id * 8 + 6] = [MAX.x, MAX.y, MIN.z]
             self.min_box[face.id * 8 + 7] = [MAX.x, MAX.y, MAX.z]
+
+            if self.layer_num == 3:
+                self.face_barycenter[face.id] = (self.verts.x[face.verts[0].id]
+                                                 + self.verts.x[face.verts[1].id]
+                                                 + self.verts.x[face.verts[2].id]) / 3
+                if self.face_barycenter[face.id].x < self.model.center[0].x \
+                        and self.face_barycenter[face.id].y < self.model.center[0].y \
+                        and self.face_barycenter[face.id].z < self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 0
+                elif self.face_barycenter[face.id].x < self.model.center[0].x \
+                        and self.face_barycenter[face.id].y < self.model.center[0].y \
+                        and self.face_barycenter[face.id].z >= self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 1
+                elif self.face_barycenter[face.id].x < self.model.center[0].x \
+                        and self.face_barycenter[face.id].y >= self.model.center[0].y \
+                        and self.face_barycenter[face.id].z < self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 2
+                elif self.face_barycenter[face.id].x < self.model.center[0].x \
+                        and self.face_barycenter[face.id].y >= self.model.center[0].y \
+                        and self.face_barycenter[face.id].z >= self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 3
+                elif self.face_barycenter[face.id].x >= self.model.center[0].x \
+                        and self.face_barycenter[face.id].y < self.model.center[0].y \
+                        and self.face_barycenter[face.id].z < self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 4
+                elif self.face_barycenter[face.id].x >= self.model.center[0].x \
+                        and self.face_barycenter[face.id].y < self.model.center[0].y \
+                        and self.face_barycenter[face.id].z >= self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 5
+                elif self.face_barycenter[face.id].x >= self.model.center[0].x \
+                        and self.face_barycenter[face.id].y >= self.model.center[0].y \
+                        and self.face_barycenter[face.id].z < self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 6
+                elif self.face_barycenter[face.id].x >= self.model.center[0].x \
+                        and self.face_barycenter[face.id].y >= self.model.center[0].y \
+                        and self.face_barycenter[face.id].z >= self.model.center[0].z:
+                    self.aabb_tree_num[face.id][0] = 7
+
+        if self.layer_num == 3:
+            for box in range(8):
+                self.layer1_box[box * 8 + 0] = [9e9, 9e9, 9e9]
+                self.layer1_box[box * 8 + 7] = [-9e9, -9e9, -9e9]
+
+            for face in self.faces:
+                for box in range(8):
+                    if self.aabb_tree_num[face.id][0] == box:
+                        if self.layer1_box[box * 8].x > self.face_barycenter[face.id].x:
+                            self.layer1_box[box * 8].x = self.face_barycenter[face.id].x
+                        if self.layer1_box[box * 8 + 7].x <= self.face_barycenter[face.id].x:
+                            self.layer1_box[box * 8 + 7].x = self.face_barycenter[face.id].x
+                        if self.layer1_box[box * 8].y > self.face_barycenter[face.id].y:
+                            self.layer1_box[box * 8].y = self.face_barycenter[face.id].y
+                        if self.layer1_box[box * 8 + 7].y <= self.face_barycenter[face.id].y:
+                            self.layer1_box[box * 8 + 7].y = self.face_barycenter[face.id].y
+                        if self.layer1_box[box * 8].z > self.face_barycenter[face.id].z:
+                            self.layer1_box[box * 8].z = self.face_barycenter[face.id].z
+                        if self.layer1_box[box * 8 + 7].z <= self.face_barycenter[face.id].z:
+                            self.layer1_box[box * 8 + 7].z = self.face_barycenter[face.id].z
+                    self.layer1_box[box * 8 + 1] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 0].y,
+                                                    self.layer1_box[box * 8 + 7].z]
+                    self.layer1_box[box * 8 + 2] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
+                                                    self.layer1_box[box * 8 + 0].z]
+                    self.layer1_box[box * 8 + 3] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
+                                                    self.layer1_box[box * 8 + 7].z]
+                    self.layer1_box[box * 8 + 4] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 0].y,
+                                                    self.layer1_box[box * 8 + 0].z]
+                    self.layer1_box[box * 8 + 5] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 0].y,
+                                                    self.layer1_box[box * 8 + 7].z]
+                    self.layer1_box[box * 8 + 6] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 7].y,
+                                                    self.layer1_box[box * 8 + 0].z]
 
     @ti.kernel
     def box_for_draw(self):
@@ -86,8 +134,35 @@ class aabb_obj:
             self.min_box_for_draw[i * 24 + 22] = self.min_box[i * 8 + 7]
             self.min_box_for_draw[i * 24 + 23] = self.min_box[i * 8 + 5]
 
+        if self.layer_num == 3:
+            for i in range(8):
+                self.layer1_box_for_draw[i * 24 + 0] = self.layer1_box[i * 8 + 0]
+                self.layer1_box_for_draw[i * 24 + 1] = self.layer1_box[i * 8 + 4]
+                self.layer1_box_for_draw[i * 24 + 2] = self.layer1_box[i * 8 + 4]
+                self.layer1_box_for_draw[i * 24 + 3] = self.layer1_box[i * 8 + 5]
+                self.layer1_box_for_draw[i * 24 + 4] = self.layer1_box[i * 8 + 5]
+                self.layer1_box_for_draw[i * 24 + 5] = self.layer1_box[i * 8 + 1]
+                self.layer1_box_for_draw[i * 24 + 6] = self.layer1_box[i * 8 + 1]
+                self.layer1_box_for_draw[i * 24 + 7] = self.layer1_box[i * 8 + 0]
+                self.layer1_box_for_draw[i * 24 + 8] = self.layer1_box[i * 8 + 2]
+                self.layer1_box_for_draw[i * 24 + 9] = self.layer1_box[i * 8 + 6]
+                self.layer1_box_for_draw[i * 24 + 10] = self.layer1_box[i * 8 + 6]
+                self.layer1_box_for_draw[i * 24 + 11] = self.layer1_box[i * 8 + 7]
+                self.layer1_box_for_draw[i * 24 + 12] = self.layer1_box[i * 8 + 7]
+                self.layer1_box_for_draw[i * 24 + 13] = self.layer1_box[i * 8 + 3]
+                self.layer1_box_for_draw[i * 24 + 14] = self.layer1_box[i * 8 + 3]
+                self.layer1_box_for_draw[i * 24 + 15] = self.layer1_box[i * 8 + 2]
+                self.layer1_box_for_draw[i * 24 + 16] = self.layer1_box[i * 8 + 2]
+                self.layer1_box_for_draw[i * 24 + 17] = self.layer1_box[i * 8 + 0]
+                self.layer1_box_for_draw[i * 24 + 18] = self.layer1_box[i * 8 + 3]
+                self.layer1_box_for_draw[i * 24 + 19] = self.layer1_box[i * 8 + 1]
+                self.layer1_box_for_draw[i * 24 + 20] = self.layer1_box[i * 8 + 6]
+                self.layer1_box_for_draw[i * 24 + 21] = self.layer1_box[i * 8 + 4]
+                self.layer1_box_for_draw[i * 24 + 22] = self.layer1_box[i * 8 + 7]
+                self.layer1_box_for_draw[i * 24 + 23] = self.layer1_box[i * 8 + 5]
+
     def run(self):
-        self.get_min_box()
-        self.box_for_draw()
-        # self.get_root()
-        # self.get_aabb_tree()
+        self.model.cal_barycenter()
+        self.get_box()
+        # self.box_for_draw()
+

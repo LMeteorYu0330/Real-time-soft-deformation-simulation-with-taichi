@@ -395,8 +395,8 @@ class Implicit(LoadModel):
 
     def cg(self, n_iter, epsilon):
         # self.mat_mul_STVK(self.mul_ans, self.mesh.verts.v)
-        # self.mat_mul_sim_Co_rotated(self.mul_ans, self.mesh.verts.v)
-        self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.mesh.verts.v)
+        self.mat_mul_sim_Co_rotated(self.mul_ans, self.mesh.verts.v)
+        # self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.mesh.verts.v)
         self.add(self.r0, self.b, -1, self.mul_ans)
         self.p0.copy_from(self.r0)
         r_2 = self.dot(self.r0, self.r0)
@@ -404,8 +404,8 @@ class Implicit(LoadModel):
         r_2_new = r_2
         for _ in ti.static(range(n_iter)):
             # self.mat_mul_STVK(self.mul_ans, self.p0)
-            self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.p0)
-            # self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
+            # self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.p0)
+            self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
             dot_ans = self.dot(self.p0, self.mul_ans)
             alpha = r_2_new / (dot_ans + epsilon)
             self.add(self.mesh.verts.v, self.mesh.verts.v, alpha, self.p0)
@@ -446,9 +446,9 @@ class Implicit(LoadModel):
 
     def substep(self, step):
         for i in range(step):
-            # self.fem_get_force_sim_Co_rotated()
+            self.fem_get_force_sim_Co_rotated()
             # self.fem_get_force_STVK()
-            self.fem_get_force_Neo_Hookean()
+            # self.fem_get_force_Neo_Hookean()
             self.fem_get_b()
             self.cg(5, 0.5)
             self.boundary_condition()
