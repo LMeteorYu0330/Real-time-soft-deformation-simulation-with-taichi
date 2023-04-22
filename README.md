@@ -7,7 +7,7 @@
 * 加入了层次包围盒
 
 ## 效果预览
-![image](https://github.com/LMeteorYu0330/3d_implicit_fem/blob/master/images/bandicam%202023-04-22%2018-16-33-742.mp4)
+![image](https://github.com/LMeteorYu0330/3d_implicit_fem/blob/master/images/202304221823.mp4)
 
 ## 现存的问题
 STVK本构模型表现不好
