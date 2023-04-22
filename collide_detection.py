@@ -164,5 +164,5 @@ class aabb_obj:
     def run(self):
         self.model.cal_barycenter()
         self.get_box()
-        # self.box_for_draw()
+        self.box_for_draw()
 

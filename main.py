@@ -41,7 +41,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.cuda)
-    # ph.init()
+    ph.init()
     window, canvas, scene, camera = ggui_init()
 
     obj = "model/liver/liver0.node"
