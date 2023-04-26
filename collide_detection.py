@@ -20,13 +20,29 @@ class aabb_obj:
         self.layer1_box = ti.Vector.field(3, ti.f32, shape=8 * 8)
         self.layer1_box_for_draw = ti.Vector.field(3, ti.f32, shape=8 * 24)
 
+    @ti.func
+    def comp(self):
+        for vert in self.verts:
+            # self.layer0_box[0] = ti.atomic_min(self.layer0_box[0], vert.x)
+            # self.layer0_box[7] = ti.atomic_max(self.layer0_box[7], vert.x)
+            if self.layer0_box[0].x > vert.x[0]:
+                self.layer0_box[0].x = vert.x[0]
+            if self.layer0_box[7].x <= vert.x[0]:
+                self.layer0_box[7].x = vert.x[0]
+            if self.layer0_box[0].y > vert.x[1]:
+                self.layer0_box[0].y = vert.x[1]
+            if self.layer0_box[7].y <= vert.x[1]:
+                self.layer0_box[7].y = vert.x[1]
+            if self.layer0_box[0].z > vert.x[2]:
+                self.layer0_box[0].z = vert.x[2]
+            if self.layer0_box[7].z <= vert.x[2]:
+                self.layer0_box[7].z = vert.x[2]
+
     @ti.kernel
     def get_box(self):
         self.layer0_box[0] = [9e9, 9e9, 9e9]
         self.layer0_box[7] = [-9e9, -9e9, -9e9]
-        for vert in self.verts:
-            self.layer0_box[0] = ti.atomic_min(self.layer0_box[0], vert.x)
-            self.layer0_box[7] = ti.atomic_max(self.layer0_box[7], vert.x)
+        self.comp()
         self.layer0_box[1] = [self.layer0_box[0].x, self.layer0_box[0].y, self.layer0_box[7].z]
         self.layer0_box[2] = [self.layer0_box[0].x, self.layer0_box[7].y, self.layer0_box[0].z]
         self.layer0_box[3] = [self.layer0_box[0].x, self.layer0_box[7].y, self.layer0_box[7].z]
@@ -122,30 +138,30 @@ class aabb_obj:
 
     @ti.kernel
     def box_for_draw(self):
-        self.layer0_box_for_draw[0] = self.layer1_box[0]
-        self.layer0_box_for_draw[1] = self.layer1_box[4]
-        self.layer0_box_for_draw[2] = self.layer1_box[4]
-        self.layer0_box_for_draw[3] = self.layer1_box[5]
-        self.layer0_box_for_draw[4] = self.layer1_box[5]
-        self.layer0_box_for_draw[5] = self.layer1_box[1]
-        self.layer0_box_for_draw[6] = self.layer1_box[1]
-        self.layer0_box_for_draw[7] = self.layer1_box[0]
-        self.layer0_box_for_draw[8] = self.layer1_box[2]
-        self.layer0_box_for_draw[9] = self.layer1_box[6]
-        self.layer0_box_for_draw[10] = self.layer1_box[6]
-        self.layer0_box_for_draw[11] = self.layer1_box[7]
-        self.layer0_box_for_draw[12] = self.layer1_box[7]
-        self.layer0_box_for_draw[13] = self.layer1_box[3]
-        self.layer0_box_for_draw[14] = self.layer1_box[3]
-        self.layer0_box_for_draw[15] = self.layer1_box[2]
-        self.layer0_box_for_draw[16] = self.layer1_box[2]
-        self.layer0_box_for_draw[17] = self.layer1_box[0]
-        self.layer0_box_for_draw[18] = self.layer1_box[3]
-        self.layer0_box_for_draw[19] = self.layer1_box[1]
-        self.layer0_box_for_draw[20] = self.layer1_box[6]
-        self.layer0_box_for_draw[21] = self.layer1_box[4]
-        self.layer0_box_for_draw[22] = self.layer1_box[7]
-        self.layer0_box_for_draw[23] = self.layer1_box[5]
+        self.layer0_box_for_draw[0] = self.layer0_box[0]
+        self.layer0_box_for_draw[1] = self.layer0_box[4]
+        self.layer0_box_for_draw[2] = self.layer0_box[4]
+        self.layer0_box_for_draw[3] = self.layer0_box[5]
+        self.layer0_box_for_draw[4] = self.layer0_box[5]
+        self.layer0_box_for_draw[5] = self.layer0_box[1]
+        self.layer0_box_for_draw[6] = self.layer0_box[1]
+        self.layer0_box_for_draw[7] = self.layer0_box[0]
+        self.layer0_box_for_draw[8] = self.layer0_box[2]
+        self.layer0_box_for_draw[9] = self.layer0_box[6]
+        self.layer0_box_for_draw[10] = self.layer0_box[6]
+        self.layer0_box_for_draw[11] = self.layer0_box[7]
+        self.layer0_box_for_draw[12] = self.layer0_box[7]
+        self.layer0_box_for_draw[13] = self.layer0_box[3]
+        self.layer0_box_for_draw[14] = self.layer0_box[3]
+        self.layer0_box_for_draw[15] = self.layer0_box[2]
+        self.layer0_box_for_draw[16] = self.layer0_box[2]
+        self.layer0_box_for_draw[17] = self.layer0_box[0]
+        self.layer0_box_for_draw[18] = self.layer0_box[3]
+        self.layer0_box_for_draw[19] = self.layer0_box[1]
+        self.layer0_box_for_draw[20] = self.layer0_box[6]
+        self.layer0_box_for_draw[21] = self.layer0_box[4]
+        self.layer0_box_for_draw[22] = self.layer0_box[7]
+        self.layer0_box_for_draw[23] = self.layer0_box[5]
 
         for i in range(0, int(self.face_num)):
             self.min_box_for_draw[i * 24 + 0] = self.min_box[i * 8 + 0]
@@ -204,4 +220,3 @@ class aabb_obj:
         self.model.cal_barycenter()
         self.get_box()
         self.box_for_draw()
-
