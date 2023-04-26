@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 
 
 @ti.data_oriented
@@ -20,29 +21,18 @@ class aabb_obj:
         self.layer1_box = ti.Vector.field(3, ti.f32, shape=8 * 8)
         self.layer1_box_for_draw = ti.Vector.field(3, ti.f32, shape=8 * 24)
 
-    @ti.func
-    def comp(self):
-        for vert in self.verts:
-            # self.layer0_box[0] = ti.atomic_min(self.layer0_box[0], vert.x)
-            # self.layer0_box[7] = ti.atomic_max(self.layer0_box[7], vert.x)
-            if self.layer0_box[0].x > vert.x[0]:
-                self.layer0_box[0].x = vert.x[0]
-            if self.layer0_box[7].x <= vert.x[0]:
-                self.layer0_box[7].x = vert.x[0]
-            if self.layer0_box[0].y > vert.x[1]:
-                self.layer0_box[0].y = vert.x[1]
-            if self.layer0_box[7].y <= vert.x[1]:
-                self.layer0_box[7].y = vert.x[1]
-            if self.layer0_box[0].z > vert.x[2]:
-                self.layer0_box[0].z = vert.x[2]
-            if self.layer0_box[7].z <= vert.x[2]:
-                self.layer0_box[7].z = vert.x[2]
+    def get_root(self):
+        x_np = self.verts.x.to_numpy()
+        self.layer0_box[0] = x_np.min(0)
+        self.layer0_box[7] = x_np.max(0)
 
     @ti.kernel
     def get_box(self):
-        self.layer0_box[0] = [9e9, 9e9, 9e9]
-        self.layer0_box[7] = [-9e9, -9e9, -9e9]
-        self.comp()
+        # self.layer0_box[0] = ti.max(self.verts.x[0], self.verts.x[1])
+        # self.layer0_box[7] = ti.min(self.verts.x[0], self.verts.x[1])
+        # for vert in self.verts:
+        #     self.layer0_box[0] = ti.atomic_min(self.layer0_box[0], vert.x)
+        #     self.layer0_box[7] = ti.atomic_max(self.layer0_box[7], vert.x)
         self.layer0_box[1] = [self.layer0_box[0].x, self.layer0_box[0].y, self.layer0_box[7].z]
         self.layer0_box[2] = [self.layer0_box[0].x, self.layer0_box[7].y, self.layer0_box[0].z]
         self.layer0_box[3] = [self.layer0_box[0].x, self.layer0_box[7].y, self.layer0_box[7].z]
@@ -218,5 +208,6 @@ class aabb_obj:
 
     def run(self):
         self.model.cal_barycenter()
+        self.get_root()
         self.get_box()
         self.box_for_draw()
