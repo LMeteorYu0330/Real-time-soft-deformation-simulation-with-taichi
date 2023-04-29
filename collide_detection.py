@@ -28,8 +28,11 @@ class aabb_obj:
 
     @ti.kernel
     def get_box(self):
-        # self.layer0_box[0] = ti.max(self.verts.x[0], self.verts.x[1])
-        # self.layer0_box[7] = ti.min(self.verts.x[0], self.verts.x[1])
+        """
+        这部分代码有很大的优化空间，并行化高，盒子变得不稳定，盒子稳定又无法并行，很奇怪
+        """
+        # self.layer0_box[0] = self.model.center[0]
+        # self.layer0_box[7] = self.model.center[0]
         # for vert in self.verts:
         #     self.layer0_box[0] = ti.atomic_min(self.layer0_box[0], vert.x)
         #     self.layer0_box[7] = ti.atomic_max(self.layer0_box[7], vert.x)
@@ -56,10 +59,12 @@ class aabb_obj:
             self.min_box[face.id * 8 + 6] = [MAX.x, MAX.y, MIN.z]
             self.min_box[face.id * 8 + 7] = [MAX.x, MAX.y, MAX.z]
 
-            if self.layer_num == 3:
+        if self.layer_num >= 3:
+            self.layer1_box.fill(self.model.center[0])
+            for face in self.faces:
                 self.face_barycenter[face.id] = (self.verts.x[face.verts[0].id]
                                                  + self.verts.x[face.verts[1].id]
-                                                 + self.verts.x[face.verts[2].id]) / 3
+                                                 + self.verts.x[face.verts[2].id]) / 3.0
                 if self.face_barycenter[face.id].x < self.model.center[0].x \
                         and self.face_barycenter[face.id].y < self.model.center[0].y \
                         and self.face_barycenter[face.id].z < self.model.center[0].z:
@@ -93,26 +98,22 @@ class aabb_obj:
                         and self.face_barycenter[face.id].z >= self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 7
 
-        if self.layer_num == 3:
-            for box in range(8):
-                self.layer1_box[box * 8 + 0] = [9e9, 9e9, 9e9]
-                self.layer1_box[box * 8 + 7] = [-9e9, -9e9, -9e9]
-
-            for face in self.faces:
                 for box in range(8):
                     if self.aabb_tree_num[face.id][0] == box:
-                        if self.layer1_box[box * 8].x > self.face_barycenter[face.id].x:
-                            self.layer1_box[box * 8].x = self.face_barycenter[face.id].x
+                        if self.layer1_box[box * 8 + 0].x > self.face_barycenter[face.id].x:
+                            self.layer1_box[box * 8 + 0].x = self.face_barycenter[face.id].x
                         if self.layer1_box[box * 8 + 7].x <= self.face_barycenter[face.id].x:
                             self.layer1_box[box * 8 + 7].x = self.face_barycenter[face.id].x
-                        if self.layer1_box[box * 8].y > self.face_barycenter[face.id].y:
-                            self.layer1_box[box * 8].y = self.face_barycenter[face.id].y
+                        if self.layer1_box[box * 8 + 0].y > self.face_barycenter[face.id].y:
+                            self.layer1_box[box * 8 + 0].y = self.face_barycenter[face.id].y
                         if self.layer1_box[box * 8 + 7].y <= self.face_barycenter[face.id].y:
                             self.layer1_box[box * 8 + 7].y = self.face_barycenter[face.id].y
-                        if self.layer1_box[box * 8].z > self.face_barycenter[face.id].z:
-                            self.layer1_box[box * 8].z = self.face_barycenter[face.id].z
+                        if self.layer1_box[box * 8 + 0].z > self.face_barycenter[face.id].z:
+                            self.layer1_box[box * 8 + 0].z = self.face_barycenter[face.id].z
                         if self.layer1_box[box * 8 + 7].z <= self.face_barycenter[face.id].z:
                             self.layer1_box[box * 8 + 7].z = self.face_barycenter[face.id].z
+
+                for box in range(8):
                     self.layer1_box[box * 8 + 1] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 0].y,
                                                     self.layer1_box[box * 8 + 7].z]
                     self.layer1_box[box * 8 + 2] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
@@ -179,7 +180,7 @@ class aabb_obj:
             self.min_box_for_draw[i * 24 + 22] = self.min_box[i * 8 + 7]
             self.min_box_for_draw[i * 24 + 23] = self.min_box[i * 8 + 5]
 
-        if self.layer_num == 3:
+        if self.layer_num >= 3:
             for i in range(8):
                 self.layer1_box_for_draw[i * 24 + 0] = self.layer1_box[i * 8 + 0]
                 self.layer1_box_for_draw[i * 24 + 1] = self.layer1_box[i * 8 + 4]
@@ -211,3 +212,27 @@ class aabb_obj:
         self.get_root()
         self.get_box()
         self.box_for_draw()
+
+
+@ti.data_oriented
+class deceteor:
+    def __init__(self, obj1, obj2):
+        self.obj1 = obj1
+        self.obj2 = obj2
+
+        self.layer_is_cross = ti.field(ti.i32, shape=3)
+
+    @ti.kernel
+    def aabb_cross_detect(self):
+        self.detect(self.obj1.layer0_box, self.obj2.layer0_box)
+        if self.layer_is_cross[0] == 1:
+            print(1)
+
+    @ti.func
+    def detect(self, aabb1, aabb2):
+        if aabb1[7].x > aabb2[0].x and aabb1[0].x < aabb2[7].x \
+                and aabb1[7].y > aabb2[0].y and aabb1[0].y < aabb2[7].y \
+                and aabb1[7].z > aabb2[0].z and aabb1[0].z < aabb2[7].z:
+            self.layer_is_cross[0] = 1
+        else:
+            self.layer_is_cross[0] = 0

@@ -19,18 +19,19 @@ def ggui_init():
     return window, canvas, scene, camera
 
 def ggui_run(window, canvas, scene, camera):
-    camera.track_user_inputs(window, 0.008, hold_key=ti.ui.RMB)
+    camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)
     scene.set_camera(camera)
     scene.ambient_light((0.5, 0.5, 0.5))
     scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
+
     scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
 
     # scene.particles(bvt_obj.model.center, 0.02, (0.9, 0.9, 0.9))
     # scene.particles(bvt_obj.layer1_box, 0.008, (0.9, 0.9, 0.9))
 
-    scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
-    scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
+    # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
+    # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
     scene.lines(bvt_obj.layer1_box_for_draw, width=1, color=(0, 0, 0))
     scene.lines(bvt_equipment.layer1_box_for_draw, width=1, color=(0, 0, 0))
     scene.lines(bvt_obj.layer0_box_for_draw, width=1, color=(0, 0, 0))
@@ -41,7 +42,7 @@ def ggui_run(window, canvas, scene, camera):
 
 
 if __name__ == '__main__':
-    ti.init(arch=ti.cuda)
+    ti.init(arch=ti.gpu)
     ph.init()
     window, canvas, scene, camera = ggui_init()
 
@@ -54,19 +55,27 @@ if __name__ == '__main__':
     bvt_obj = cd.aabb_obj(model)
     bvt_equipment = cd.aabb_obj(equipment_model, layer_num=2)
 
+    detector = cd.deceteor(bvt_obj, bvt_equipment)
+
     hap = ha.haptices(equipment_model.mesh.verts)
 
+    gui_run = True
     while window.running:
         if window.is_pressed('r'):
             model.reset()
-        if window.is_pressed(ti.ui.ESCAPE):
-            break
+        if window.get_event(ti.ui.PRESS):
+            if window.event.key == 'p':
+                gui_run = not gui_run
+            if window.event.key == ti.ui.ESCAPE:
+                break
 
-        model.substep(1)
+        if gui_run:
+            model.substep(1)
 
-        bvt_obj.run()
-        bvt_equipment.run()
+            bvt_obj.run()
+            bvt_equipment.run()
+            detector.aabb_cross_detect()
 
-        hap.run()
+            hap.run()
 
         ggui_run(window, canvas, scene, camera)
