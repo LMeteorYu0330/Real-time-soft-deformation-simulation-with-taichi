@@ -53,7 +53,7 @@ if __name__ == '__main__':
     equipment_model = fem.LoadModel(equipment)
 
     bvt_obj = cd.aabb_obj(model)
-    bvt_equipment = cd.aabb_obj(equipment_model, layer_num=2)
+    bvt_equipment = cd.aabb_obj(equipment_model, layer_num=3)
 
     detector = cd.deceteor(bvt_obj, bvt_equipment)
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
             bvt_obj.run()
             bvt_equipment.run()
-            detector.aabb_cross_detect()
+            detector.run()
 
             hap.run()
 

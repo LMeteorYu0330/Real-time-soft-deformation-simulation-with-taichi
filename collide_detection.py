@@ -14,7 +14,7 @@ class aabb_obj:
 
         self.min_box = ti.Vector.field(3, ti.f32, shape=self.face_num * 8)
         self.min_box_for_draw = ti.Vector.field(3, ti.f32, shape=self.face_num * 24)
-        self.aabb_tree_num = ti.Vector.field(layer_num, ti.f32, shape=self.face_num)
+        self.aabb_tree_num = ti.Vector.field(layer_num, ti.i32, shape=self.face_num)
         self.face_barycenter = ti.Vector.field(3, ti.f32, shape=self.face_num)
         self.layer0_box = ti.Vector.field(3, ti.f32, shape=1 * 8)
         self.layer0_box_for_draw = ti.Vector.field(3, ti.f32, shape=1 * 24)
@@ -220,19 +220,59 @@ class deceteor:
         self.obj1 = obj1
         self.obj2 = obj2
 
-        self.layer_is_cross = ti.field(ti.i32, shape=3)
+        self.box_is_cross = ti.field(ti.i32, shape=3)
+        self.lay1_corss_box = ti.Vector.field(8, ti.i32, shape=8)
+        self.min_box_decete = ti.field(ti.i32, shape=1)
 
     @ti.kernel
-    def aabb_cross_detect(self):
-        self.detect(self.obj1.layer0_box, self.obj2.layer0_box)
-        if self.layer_is_cross[0] == 1:
-            print(1)
+    def aabb_cross_detect0(self):
+        self.lay1_corss_box.fill(0)
+        self.min_box_decete[0] = 0
+        self.detect(self.obj1.layer0_box[0],
+                    self.obj2.layer0_box[0],
+                    self.obj1.layer0_box[7],
+                    self.obj2.layer0_box[7], 0)
+        if self.box_is_cross[0] == 1:
+            for box1 in range(8):
+                for box2 in range(8):
+                    self.detect(self.obj1.layer1_box[8 * box1 + 0],
+                                self.obj2.layer1_box[8 * box2 + 0],
+                                self.obj1.layer1_box[8 * box1 + 7],
+                                self.obj2.layer1_box[8 * box2 + 7],
+                                1)
+                    if self.box_is_cross[1] == 1:
+                        self.lay1_corss_box[box1][box2] = 1
+                        self.min_box_decete[0] = 1
+
+    @ti.kernel
+    def aabb_cross_detect1(self):
+        if self.min_box_decete[0]:
+            for box1 in range(self.obj1.face_num):
+                for box2 in range(self.obj2.face_num):
+                    id1 = self.obj1.aabb_tree_num[box1][0]
+                    id2 = self.obj2.aabb_tree_num[box2][0]
+                    if self.lay1_corss_box[id1][id2] == 1:
+                        vert0 = self.obj1.face.verts[0].id
+                        """
+                        图元检测
+                        """
 
     @ti.func
-    def detect(self, aabb1, aabb2):
-        if aabb1[7].x > aabb2[0].x and aabb1[0].x < aabb2[7].x \
-                and aabb1[7].y > aabb2[0].y and aabb1[0].y < aabb2[7].y \
-                and aabb1[7].z > aabb2[0].z and aabb1[0].z < aabb2[7].z:
-            self.layer_is_cross[0] = 1
+    def detect(self, aabb1min, aabb2min, aabb1max, aabb2max, i):
+        if aabb1max.x > aabb2min.x and aabb1min.x < aabb2max.x \
+                and aabb1max.y > aabb2min.y and aabb1min.y < aabb2max.y \
+                and aabb1max.z > aabb2min.z and aabb1min.z < aabb2max.z:
+            self.box_is_cross[i] = 1
         else:
-            self.layer_is_cross[0] = 0
+            self.box_is_cross[i] = 0
+
+    @ti.func
+    def point_face_detect(self):
+        """
+        图元检测
+        """
+        pass
+
+    def run(self):
+        self.aabb_cross_detect0()
+        self.aabb_cross_detect1()

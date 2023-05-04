@@ -1,6 +1,6 @@
 import taichi as ti
 import meshtaichi_patcher as mp
-import math
+
 
 @ti.data_oriented
 class LoadModel:
