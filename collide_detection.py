@@ -11,6 +11,7 @@ class aabb_obj:
         self.faces = self.mesh.faces
         self.layer_num = layer_num
         self.face_num = len(self.faces)
+        self.vert_num = self.model.vert_num
 
         self.min_box = ti.Vector.field(3, ti.f32, shape=self.face_num * 8)
         self.min_box_for_draw = ti.Vector.field(3, ti.f32, shape=self.face_num * 24)
@@ -20,6 +21,33 @@ class aabb_obj:
         self.layer0_box_for_draw = ti.Vector.field(3, ti.f32, shape=1 * 24)
         self.layer1_box = ti.Vector.field(3, ti.f32, shape=8 * 8)
         self.layer1_box_for_draw = ti.Vector.field(3, ti.f32, shape=8 * 24)
+
+        self.tree0 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree1 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree2 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree3 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree4 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree5 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree6 = ti.root.dynamic(ti.i, self.vert_num)
+        self.tree7 = ti.root.dynamic(ti.i, self.vert_num)
+        self.box = ti.types.struct(v0=ti.math.vec3, v1=ti.math.vec3, v2=ti.math.vec3, v3=ti.math.vec3,
+                                   v4=ti.math.vec3, v5=ti.math.vec3, v6=ti.math.vec3, v7=ti.math.vec3)
+        self.box0 = self.box.field()
+        self.box1 = self.box.field()
+        self.box2 = self.box.field()
+        self.box3 = self.box.field()
+        self.box4 = self.box.field()
+        self.box5 = self.box.field()
+        self.box6 = self.box.field()
+        self.box7 = self.box.field()
+        self.tree0.place(self.box0)
+        self.tree1.place(self.box1)
+        self.tree2.place(self.box2)
+        self.tree3.place(self.box3)
+        self.tree4.place(self.box4)
+        self.tree5.place(self.box5)
+        self.tree6.place(self.box6)
+        self.tree7.place(self.box7)
 
     def get_root(self):
         x_np = self.verts.x.to_numpy()
@@ -244,19 +272,6 @@ class deceteor:
                         self.lay1_corss_box[box1][box2] = 1
                         self.min_box_decete[0] = 1
 
-    @ti.kernel
-    def aabb_cross_detect1(self):
-        if self.min_box_decete[0]:
-            for box1 in range(self.obj1.face_num):
-                for box2 in range(self.obj2.face_num):
-                    id1 = self.obj1.aabb_tree_num[box1][0]
-                    id2 = self.obj2.aabb_tree_num[box2][0]
-                    if self.lay1_corss_box[id1][id2] == 1:
-                        vert0 = self.obj1.face.verts[0].id
-                        """
-                        图元检测
-                        """
-
     @ti.func
     def detect(self, aabb1min, aabb2min, aabb1max, aabb2max, i):
         if aabb1max.x > aabb2min.x and aabb1min.x < aabb2max.x \
@@ -265,13 +280,6 @@ class deceteor:
             self.box_is_cross[i] = 1
         else:
             self.box_is_cross[i] = 0
-
-    @ti.func
-    def point_face_detect(self):
-        """
-        图元检测
-        """
-        pass
 
     def run(self):
         self.aabb_cross_detect0()
