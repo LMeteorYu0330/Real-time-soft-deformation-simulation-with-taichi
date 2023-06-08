@@ -237,7 +237,7 @@ class deceteor:
         self.box_is_cross = ti.field(ti.i32, shape=3)
         self.min_box_decete = ti.field(ti.i32, shape=1)
 
-        self.cross_tree = ti.root.dynamic(ti.i, 16, chunksize=4)
+        self.cross_tree = ti.root.dynamic(ti.i, 16)
         self.cross = ti.types.struct(tree1=ti.i32, tree2=ti.i32)
         self.cross_num = self.cross.field()
         self.cross_tree.place(self.cross_num)
