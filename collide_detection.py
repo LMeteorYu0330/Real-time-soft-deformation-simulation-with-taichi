@@ -1,5 +1,4 @@
 import taichi as ti
-import numpy as np
 
 
 @ti.data_oriented
@@ -22,32 +21,9 @@ class aabb_obj:
         self.layer1_box = ti.Vector.field(3, ti.f32, shape=8 * 8)
         self.layer1_box_for_draw = ti.Vector.field(3, ti.f32, shape=8 * 24)
 
-        self.tree0 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree1 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree2 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree3 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree4 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree5 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree6 = ti.root.dynamic(ti.i, self.vert_num)
-        self.tree7 = ti.root.dynamic(ti.i, self.vert_num)
-        self.box = ti.types.struct(v0=ti.math.vec3, v1=ti.math.vec3, v2=ti.math.vec3, v3=ti.math.vec3,
-                                   v4=ti.math.vec3, v5=ti.math.vec3, v6=ti.math.vec3, v7=ti.math.vec3)
-        self.box0 = self.box.field()
-        self.box1 = self.box.field()
-        self.box2 = self.box.field()
-        self.box3 = self.box.field()
-        self.box4 = self.box.field()
-        self.box5 = self.box.field()
-        self.box6 = self.box.field()
-        self.box7 = self.box.field()
-        self.tree0.place(self.box0)
-        self.tree1.place(self.box1)
-        self.tree2.place(self.box2)
-        self.tree3.place(self.box3)
-        self.tree4.place(self.box4)
-        self.tree5.place(self.box5)
-        self.tree6.place(self.box6)
-        self.tree7.place(self.box7)
+        self.tree = ti.root.dense(ti.i, 8).dynamic(ti.j, self.face_num)
+        self.box = ti.field(ti.i32)
+        self.tree.place(self.box)
 
     def get_root(self):
         x_np = self.verts.x.to_numpy()
@@ -97,34 +73,42 @@ class aabb_obj:
                         and self.face_barycenter[face.id].y < self.model.center[0].y \
                         and self.face_barycenter[face.id].z < self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 0
+                    self.box[0].append(face.id)
                 elif self.face_barycenter[face.id].x < self.model.center[0].x \
                         and self.face_barycenter[face.id].y < self.model.center[0].y \
                         and self.face_barycenter[face.id].z >= self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 1
+                    self.box[1].append(face.id)
                 elif self.face_barycenter[face.id].x < self.model.center[0].x \
                         and self.face_barycenter[face.id].y >= self.model.center[0].y \
                         and self.face_barycenter[face.id].z < self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 2
+                    self.box[2].append(face.id)
                 elif self.face_barycenter[face.id].x < self.model.center[0].x \
                         and self.face_barycenter[face.id].y >= self.model.center[0].y \
                         and self.face_barycenter[face.id].z >= self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 3
+                    self.box[3].append(face.id)
                 elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                         and self.face_barycenter[face.id].y < self.model.center[0].y \
                         and self.face_barycenter[face.id].z < self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 4
+                    self.box[4].append(face.id)
                 elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                         and self.face_barycenter[face.id].y < self.model.center[0].y \
                         and self.face_barycenter[face.id].z >= self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 5
+                    self.box[5].append(face.id)
                 elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                         and self.face_barycenter[face.id].y >= self.model.center[0].y \
                         and self.face_barycenter[face.id].z < self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 6
+                    self.box[6].append(face.id)
                 elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                         and self.face_barycenter[face.id].y >= self.model.center[0].y \
                         and self.face_barycenter[face.id].z >= self.model.center[0].z:
                     self.aabb_tree_num[face.id][0] = 7
+                    self.box[7].append(face.id)
 
                 for box in range(8):
                     if self.aabb_tree_num[face.id][0] == box:
@@ -141,19 +125,19 @@ class aabb_obj:
                         if self.layer1_box[box * 8 + 7].z <= self.face_barycenter[face.id].z:
                             self.layer1_box[box * 8 + 7].z = self.face_barycenter[face.id].z
 
-                for box in range(8):
-                    self.layer1_box[box * 8 + 1] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 0].y,
-                                                    self.layer1_box[box * 8 + 7].z]
-                    self.layer1_box[box * 8 + 2] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
-                                                    self.layer1_box[box * 8 + 0].z]
-                    self.layer1_box[box * 8 + 3] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
-                                                    self.layer1_box[box * 8 + 7].z]
-                    self.layer1_box[box * 8 + 4] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 0].y,
-                                                    self.layer1_box[box * 8 + 0].z]
-                    self.layer1_box[box * 8 + 5] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 0].y,
-                                                    self.layer1_box[box * 8 + 7].z]
-                    self.layer1_box[box * 8 + 6] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 7].y,
-                                                    self.layer1_box[box * 8 + 0].z]
+            for box in range(8):
+                self.layer1_box[box * 8 + 1] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 0].y,
+                                                self.layer1_box[box * 8 + 7].z]
+                self.layer1_box[box * 8 + 2] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
+                                                self.layer1_box[box * 8 + 0].z]
+                self.layer1_box[box * 8 + 3] = [self.layer1_box[box * 8 + 0].x, self.layer1_box[box * 8 + 7].y,
+                                                self.layer1_box[box * 8 + 7].z]
+                self.layer1_box[box * 8 + 4] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 0].y,
+                                                self.layer1_box[box * 8 + 0].z]
+                self.layer1_box[box * 8 + 5] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 0].y,
+                                                self.layer1_box[box * 8 + 7].z]
+                self.layer1_box[box * 8 + 6] = [self.layer1_box[box * 8 + 7].x, self.layer1_box[box * 8 + 7].y,
+                                                self.layer1_box[box * 8 + 0].z]
 
     @ti.kernel
     def box_for_draw(self):
@@ -247,15 +231,21 @@ class deceteor:
     def __init__(self, obj1, obj2):
         self.obj1 = obj1
         self.obj2 = obj2
+        self.box1 = self.obj1.box
+        self.box2 = self.obj2.box
 
         self.box_is_cross = ti.field(ti.i32, shape=3)
-        self.lay1_corss_box = ti.Vector.field(8, ti.i32, shape=8)
         self.min_box_decete = ti.field(ti.i32, shape=1)
+
+        self.cross_tree = ti.root.dynamic(ti.i, 16, chunksize=4)
+        self.cross = ti.types.struct(tree1=ti.i32, tree2=ti.i32)
+        self.cross_num = self.cross.field()
+        self.cross_tree.place(self.cross_num)
 
     @ti.kernel
     def aabb_cross_detect0(self):
-        self.lay1_corss_box.fill(0)
         self.min_box_decete[0] = 0
+
         self.detect(self.obj1.layer0_box[0],
                     self.obj2.layer0_box[0],
                     self.obj1.layer0_box[7],
@@ -269,8 +259,20 @@ class deceteor:
                                 self.obj2.layer1_box[8 * box2 + 7],
                                 1)
                     if self.box_is_cross[1] == 1:
-                        self.lay1_corss_box[box1][box2] = 1
+                        self.cross_num.append(self.cross(box1, box2))
                         self.min_box_decete[0] = 1
+
+    @ti.kernel
+    def aabb_cross_detect1(self):
+        if self.min_box_decete[0] == 1:
+            for i in range(self.cross_num.length()):
+                pass
+                # 有多少个盒子发生相交
+
+        self.cross_num.deactivate()
+        for i in range(8):
+            self.box1[i].deactivate()
+            self.box2[i].deactivate()
 
     @ti.func
     def detect(self, aabb1min, aabb2min, aabb1max, aabb2max, i):

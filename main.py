@@ -19,7 +19,7 @@ def ggui_init():
     return window, canvas, scene, camera
 
 def ggui_run(window, canvas, scene, camera):
-    camera.track_user_inputs(window, 0.0008, hold_key=ti.ui.RMB)
+    camera.track_user_inputs(window, 0.001, hold_key=ti.ui.RMB)
     scene.set_camera(camera)
     scene.ambient_light((0.5, 0.5, 0.5))
     scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
@@ -43,7 +43,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    # ph.init()
+    ph.init()
     window, canvas, scene, camera = ggui_init()
 
     obj = "model/liver/liver0.node"
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     detector = cd.deceteor(bvt_obj, bvt_equipment)
 
-    # hap = ha.haptices(equipment_model.mesh.verts)
+    hap = ha.haptices(equipment_model.mesh.verts)
 
     gui_run = True
     while window.running:
@@ -76,6 +76,6 @@ if __name__ == '__main__':
             bvt_equipment.run()
             detector.run()
 
-            # hap.run()
+            hap.run()
 
         ggui_run(window, canvas, scene, camera)
