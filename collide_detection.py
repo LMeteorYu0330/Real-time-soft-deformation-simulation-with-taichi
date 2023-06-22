@@ -262,9 +262,15 @@ class deceteor:
     @ti.kernel
     def aabb_cross_detect1(self):
         if self.min_box_decete[0] == 1:
-            print(self.obj1.verts.x[self.box1[self.cross_num[0].tree1, 0].vert0])
-
-
+            for i in range(self.cross_num.length()):
+                # print(self.cross_num[i].tree1)
+                for j in range(self.box1[self.cross_num[i].tree1].length()):
+                    pass
+                    # print(self.box1[self.cross_num[i].tree1, j].vert0,
+                    #       self.box1[self.cross_num[i].tree1, j].vert1,
+                    #       self.box1[self.cross_num[i].tree1, j].vert2)
+                    # print(self.box1[self.cross_num[i].tree1, j].vert0)
+                    # print(self.obj1.verts.x[self.box1[self.cross_num[i].tree1, j].vert0])
 
     @ti.func
     def detect(self, aabb1min, aabb2min, aabb1max, aabb2max, i):
