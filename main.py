@@ -27,23 +27,21 @@ def ggui_run(window, canvas, scene, camera):
     scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
 
-    # scene.particles(bvt_obj.model.center, 0.02, (0.9, 0.9, 0.9))
-    # scene.particles(bvt_obj.layer1_box, 0.008, (0.9, 0.9, 0.9))
-
+    scene.lines(detector.line, width=1, color=(0, 0, 0))
+    # scene.particles(bvt_equipment.face_barycenter, 0.0008, (0.9, 0.9, 0.9))
     # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_obj.layer1_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.layer1_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_obj.layer0_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.layer0_box_for_draw, width=1, color=(0, 0, 0))
-
     canvas.scene(scene)
     window.show()
 
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    # ph.init()
+    ph.init()
     window, canvas, scene, camera = ggui_init()
 
     obj = "model/liver/liver0.node"
@@ -57,7 +55,7 @@ if __name__ == '__main__':
 
     detector = cd.deceteor(bvt_obj, bvt_equipment)
 
-    # hap = ha.haptices(equipment_model.mesh.verts)
+    hap = ha.haptices(equipment_model.mesh.verts)
 
     gui_run = True
     while window.running:
@@ -76,6 +74,6 @@ if __name__ == '__main__':
             bvt_equipment.run()
             detector.run()
 
-            # hap.run()
+            hap.run()
 
         ggui_run(window, canvas, scene, camera)

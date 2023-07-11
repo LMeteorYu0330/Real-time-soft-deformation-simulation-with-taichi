@@ -1,5 +1,6 @@
 import taichi as ti
 import meshtaichi_patcher as mp
+import numpy as np
 
 
 @ti.data_oriented
@@ -34,6 +35,17 @@ class LoadModel:
             self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
             self.indices = ti.field(ti.i32, shape=len(self.mesh.faces) * 3)
             self.init_surf_indices()
+            # self.equip_get_line()
+
+            x_np = self.mesh.verts.x.to_numpy()[:, 0]
+            line_min = np.where(x_np == x_np.min(0))[0]
+            line_max = np.where(x_np == x_np.max(0))[0]
+            self.min_len = len(line_min)
+            self.max_len = len(line_max)
+            self.line0 = ti.ndarray(dtype=ti.i32, shape=self.min_len)
+            self.line1 = ti.ndarray(dtype=ti.i32, shape=self.max_len)
+            self.line0 = line_min
+            self.line1 = line_max
 
         self.vert_num = len(self.mesh.verts)
         self.center = ti.Vector.field(3, ti.f32, shape=1)

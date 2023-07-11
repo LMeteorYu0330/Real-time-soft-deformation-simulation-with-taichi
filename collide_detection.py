@@ -22,7 +22,7 @@ class aabb_obj:
         self.layer1_box_for_draw = ti.Vector.field(3, ti.f32, shape=8 * 24)
 
         self.tree = ti.root.dense(ti.i, 8).dynamic(ti.j, self.face_num)
-        self.box_struct = ti.types.struct(vert0=ti.i32, vert1=ti.i32, vert2=ti.i32)
+        self.box_struct = ti.types.struct(vert0=ti.i32, vert1=ti.i32, vert2=ti.i32, fid=ti.i32)
         self.box = self.box_struct.field()
         self.tree.place(self.box)
 
@@ -62,42 +62,42 @@ class aabb_obj:
                     and self.face_barycenter[face.id].y < self.model.center[0].y \
                     and self.face_barycenter[face.id].z < self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 0
-                self.box[0].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[0].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x < self.model.center[0].x \
                     and self.face_barycenter[face.id].y < self.model.center[0].y \
                     and self.face_barycenter[face.id].z >= self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 1
-                self.box[1].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[1].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x < self.model.center[0].x \
                     and self.face_barycenter[face.id].y >= self.model.center[0].y \
                     and self.face_barycenter[face.id].z < self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 2
-                self.box[2].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[2].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x < self.model.center[0].x \
                     and self.face_barycenter[face.id].y >= self.model.center[0].y \
                     and self.face_barycenter[face.id].z >= self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 3
-                self.box[3].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[3].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                     and self.face_barycenter[face.id].y < self.model.center[0].y \
                     and self.face_barycenter[face.id].z < self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 4
-                self.box[4].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[4].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                     and self.face_barycenter[face.id].y < self.model.center[0].y \
                     and self.face_barycenter[face.id].z >= self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 5
-                self.box[5].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[5].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                     and self.face_barycenter[face.id].y >= self.model.center[0].y \
                     and self.face_barycenter[face.id].z < self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 6
-                self.box[6].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[6].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
             elif self.face_barycenter[face.id].x >= self.model.center[0].x \
                     and self.face_barycenter[face.id].y >= self.model.center[0].y \
                     and self.face_barycenter[face.id].z >= self.model.center[0].z:
                 self.aabb_tree_num[face.id][0] = 7
-                self.box[7].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id))
+                self.box[7].append(self.box_struct(face.verts[0].id, face.verts[1].id, face.verts[2].id, face.id))
 
             if self.layer1_box[self.aabb_tree_num[face.id][0] * 8 + 0].x > self.face_barycenter[face.id].x:
                 self.layer1_box[self.aabb_tree_num[face.id][0] * 8 + 0].x = self.face_barycenter[face.id].x
@@ -114,7 +114,6 @@ class aabb_obj:
 
     @ti.kernel
     def box_for_draw(self):
-
 
         self.layer0_box[1] = [self.layer0_box[0].x, self.layer0_box[0].y, self.layer0_box[7].z]
         self.layer0_box[2] = [self.layer0_box[0].x, self.layer0_box[7].y, self.layer0_box[0].z]
@@ -229,7 +228,9 @@ class deceteor:
         self.obj2 = obj2
         self.box1 = self.obj1.box
         self.box2 = self.obj2.box
-
+        self.face_barycenter1 = self.obj1.face_barycenter
+        self.face_barycenter2 = self.obj2.face_barycenter
+        self.line = ti.Vector.field(3, dtype=ti.f32, shape=2)
         self.box_is_cross = ti.field(ti.i32, shape=3)
         self.min_box_decete = ti.field(ti.i32, shape=1)
 
@@ -237,6 +238,11 @@ class deceteor:
         self.cross = ti.types.struct(tree1=ti.i32, tree2=ti.i32)
         self.cross_num = self.cross.field()
         self.cross_tree.place(self.cross_num)
+
+        self.D_tree = ti.root.dynamic(ti.i, 2048)
+        self.dist = ti.types.struct(D=ti.f32)
+        self.DF = self.dist.field()
+        self.D_tree.place(self.DF)
 
     @ti.kernel
     def aabb_cross_detect0(self):
@@ -248,29 +254,66 @@ class deceteor:
                     self.obj1.layer0_box[7],
                     self.obj2.layer0_box[7], 0)
         if self.box_is_cross[0] == 1:
-            for box1 in range(8):
-                for box2 in range(8):
-                    self.detect(self.obj1.layer1_box[8 * box1 + 0],
-                                self.obj2.layer1_box[8 * box2 + 0],
-                                self.obj1.layer1_box[8 * box1 + 7],
-                                self.obj2.layer1_box[8 * box2 + 7],
-                                1)
-                    if self.box_is_cross[1] == 1:
-                        self.cross_num.append(self.cross(box1, box2))
-                        self.min_box_decete[0] = 1
+            for i in range(64):
+                box1 = (i // 8) % 8
+                box2 = i % 8
+                self.detect(self.obj1.layer1_box[8 * box1 + 0],
+                            self.obj2.layer1_box[8 * box2 + 0],
+                            self.obj1.layer1_box[8 * box1 + 7],
+                            self.obj2.layer1_box[8 * box2 + 7],
+                            1)
+                if self.box_is_cross[1] == 1:
+                    self.cross_num.append(self.cross(box1, box2))
+                    self.min_box_decete[0] = 1
+
+    line_type = ti.types.ndarray(dtype=ti.i32, ndim=1)
 
     @ti.kernel
-    def aabb_cross_detect1(self):
+    def line_tri_detect(self, lmin: line_type, lmax: line_type):
+        self.line[0] = self.obj2.verts.x[lmin[0]]
+        self.line[1] = self.obj2.verts.x[lmax[0]]
+        line = self.line[0] - self.line[1]
+
+
+    @ti.kernel
+    def aabb_cross_detect1_ballball(self):
+        self.DF.deactivate()
         if self.min_box_decete[0] == 1:
             for i in range(self.cross_num.length()):
                 # print(self.cross_num[i].tree1)
                 for j in range(self.box1[self.cross_num[i].tree1].length()):
-                    pass
-                    # print(self.box1[self.cross_num[i].tree1, j].vert0,
-                    #       self.box1[self.cross_num[i].tree1, j].vert1,
-                    #       self.box1[self.cross_num[i].tree1, j].vert2)
-                    # print(self.box1[self.cross_num[i].tree1, j].vert0)
-                    # print(self.obj1.verts.x[self.box1[self.cross_num[i].tree1, j].vert0])
+                    for k in range(self.box2[self.cross_num[i].tree2].length()):
+                        P1 = self.face_barycenter1[self.box1[self.cross_num[i].tree1, j].fid]
+                        P2 = self.face_barycenter2[self.box2[self.cross_num[i].tree2, k].fid]
+                        P12 = (P1 - P2) ** 2
+                        D = (P12.x + P12.y + P12.z) ** 0.5
+                        if D <= 0.005:
+                            self.DF.append(D)
+        if self.DF.length() != 0:
+            print(self.DF.length())
+        # print(self.box1[self.cross_num[i].tree1, j].vert0,
+        #       self.box1[self.cross_num[i].tree1, j].vert1,
+        #       self.box1[self.cross_num[i].tree1, j].vert2)
+        # print(self.box1[self.cross_num[i].tree1, j].vert0)
+        # print(self.obj1.verts.x[self.box1[self.cross_num[i].tree1, j].vert0])
+
+    # @ti.kernel
+    # def aabb_cross_detect1_ballball(self):
+    #     self.DF.deactivate()
+    #     if self.min_box_decete[0] == 1:
+    #         for i in range(self.cross_num.length()):
+    #             len1 = self.box1[self.cross_num[i].tree1].length()
+    #             len2 = self.box2[self.cross_num[i].tree2].length()
+    #             lenth = len1 * len2
+    #             for j in range(lenth):
+    #                 P1 = self.face_barycenter1[self.box1[self.cross_num[i].tree1, j // len2 % len1].fid]
+    #                 P2 = self.face_barycenter2[self.box2[self.cross_num[i].tree2, j % len2].fid]
+    #                 P12 = (P1 - P2) ** 2
+    #                 D = P12.x + P12.y + P12.z
+    #                 if D <= 0.003:
+    #                     self.DF.append(D)
+    #         if self.DF.length() != 0:
+    #             print(self.DF.length())
 
     @ti.func
     def detect(self, aabb1min, aabb2min, aabb1max, aabb2max, i):
@@ -283,4 +326,5 @@ class deceteor:
 
     def run(self):
         self.aabb_cross_detect0()
-        self.aabb_cross_detect1()
+        self.line_tri_detect(self.obj2.model.line0, self.obj2.model.line1)
+        # self.aabb_cross_detect1_ballball()
