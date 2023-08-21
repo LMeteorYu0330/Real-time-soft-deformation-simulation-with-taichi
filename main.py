@@ -5,7 +5,7 @@ import fem_class as fem
 import collide_detection as cd
 import haptics as ha
 import pyhaptics as ph
-import CCD
+import DCD
 def ggui_init():
     window = ti.ui.Window("FEM", (768, 768), vsync=False)
     canvas = window.get_canvas()
@@ -45,18 +45,14 @@ if __name__ == '__main__':
     window, canvas, scene, camera = ggui_init()
 
     obj = "model/liver/liver0.node"
-    equipment = "model/equipment/Scissors.stl"
+    equipment = "model/equipment/zhen.obj"
 
     model = fem.Implicit(obj, v_norm=1)
-    equipment_model = fem.LoadModel(equipment)
+    equipment_model = fem.LoadModel(equipment, v_norm=1e-3)
 
-    cd = CCD.ccd(model, equipment_model)
-    # bvt_obj = cd.aabb_obj(model)
-    # bvt_equipment = cd.aabb_obj(equipment_model)
-    #
-    # detector = cd.deceteor(bvt_obj, bvt_equipment)
+    hap = ha.haptices(equipment_model.mesh.verts, 0, 1 / 2 * ti.math.pi)
 
-    hap = ha.haptices(equipment_model.mesh.verts)
+    cd = DCD.dcd(model, equipment_model)
 
     gui_run = True
     while window.running:
@@ -74,11 +70,7 @@ if __name__ == '__main__':
 
         if gui_run:
             model.substep(1)
-
-            # bvt_obj.run()
-            # bvt_equipment.run()
-            # detector.run()
-            cd.run()
             hap.run()
+            cd.run()
 
         ggui_run(window, canvas, scene, camera)

@@ -8,13 +8,13 @@ from math import pi
 
 @ti.data_oriented
 class haptices:
-    def __init__(self, verts):
+    def __init__(self, verts, direct, init_rota):
         self.mat_row = np.zeros([4, 4])
         self.verts = verts
         self.mat = ti.Matrix.field(4, 4, dtype=ti.f32, shape=1)
         self.rota_mat = ti.Matrix.field(3, 3, dtype=ti.f32, shape=1)
 
-        self.rota(1, -pi / 2)
+        self.rota(direct, init_rota)
 
     @ti.kernel
     def rota(self, direction: ti.i32, alpha: ti.f32):

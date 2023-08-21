@@ -7,6 +7,7 @@ import numpy as np
 class LoadModel:
     def __init__(self,
                  filename,
+                 v_norm=1
                  ):
         # load_mesh
         model_type = filename.split('.')[-1]
@@ -35,9 +36,7 @@ class LoadModel:
             self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
             self.indices = ti.field(ti.i32, shape=len(self.mesh.faces) * 3)
             self.init_surf_indices()
-            # self.equip_get_line()
-
-            x_np = self.mesh.verts.x.to_numpy()[:, 0]
+            x_np = self.mesh.verts.x.to_numpy()[:, 1]
             line_min = np.where(x_np == x_np.min(0))[0]
             line_max = np.where(x_np == x_np.max(0))[0]
             self.min_len = len(line_min)
@@ -47,9 +46,18 @@ class LoadModel:
             self.line0 = line_min
             self.line1 = line_max
 
+        self.v_norm = v_norm
         self.vert_num = len(self.mesh.verts)
         self.center = ti.Vector.field(3, ti.f32, shape=1)
         self.I = ti.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]], ti.i32)
+        self.norm_volume_equipment()
+
+    @ti.kernel
+    def norm_volume_equipment(self):
+        if self.v_norm != 0:
+            for vert in self.mesh.verts:
+                vert.x *= self.v_norm
+                vert.ox *= self.v_norm
 
     @ti.kernel
     def init_surf_indices(self):
@@ -242,7 +250,7 @@ class Implicit(LoadModel):
                 for j in ti.static(range(3)):
                     v[j, i] = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
             self.V[None] += -(1.0 / 6.0) * v.determinant()
-        if self.v_norm == 1:
+        if self.v_norm != 0:
             for vert in self.mesh.verts:
                 vert.x *= 1000 / self.V[None]
                 vert.ox *= 1000 / self.V[None]
@@ -464,7 +472,7 @@ class Implicit(LoadModel):
     def velocity_decay(self):
         for vert in self.mesh.verts:
             for i in range(3):
-                if vert.v[i] <= 2e-4 and ti.math.length(vert.f) <= 0.01:
+                if vert.v[i] <= 2e-4 and ti.math.length(vert.f) <= 0.1:
                     vert.v[i] = 0
 
     def substep(self, step):

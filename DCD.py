@@ -3,7 +3,7 @@ import fem_class as fem
 
 
 @ti.data_oriented
-class ccd:
+class dcd:
     def __init__(self, *args, **kwargs):
         self.obj_num = len(args)
         names = self.__dict__
@@ -87,6 +87,6 @@ if __name__ == '__main__':
     model = fem.Implicit(obj, v_norm=1)
     equipment_model = fem.LoadModel(equipment)
 
-    cd = ccd(model, equipment_model)
+    cd = dcd(model, equipment_model)
 
     cd.run()
