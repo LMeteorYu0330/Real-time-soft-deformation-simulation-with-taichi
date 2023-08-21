@@ -444,7 +444,7 @@ class Implicit(LoadModel):
 
     @ti.kernel
     def boundary_condition(self):
-        bounds = ti.Vector([1.0, 0.1, 1.0])
+        bounds = ti.Vector([0.2, 0.1, 0.2])
         for vert in self.mesh.verts:
             for i in ti.static(range(3)):
                 if vert.x[i] < -bounds[i]:
@@ -456,6 +456,17 @@ class Implicit(LoadModel):
                     if vert.v[i] > 0.0:
                         vert.v[i] = 0.0
 
+            if vert.x[1] + bounds[1] < 0.002 and (vert.v[0] != 0 or vert.v[2] != 0):
+                vert.v[0] *= 0.1
+                vert.v[2] *= 0.1
+
+    @ti.kernel
+    def velocity_decay(self):
+        for vert in self.mesh.verts:
+            for i in range(3):
+                if vert.v[i] <= 2e-4 and ti.math.length(vert.f) <= 0.01:
+                    vert.v[i] = 0
+
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
@@ -464,6 +475,7 @@ class Implicit(LoadModel):
             self.fem_get_b()
             self.cg(5, 0.5)
             self.boundary_condition()
+            self.velocity_decay()
 
     @ti.func
     def ssvd(self, fai):

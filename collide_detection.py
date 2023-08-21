@@ -274,7 +274,6 @@ class deceteor:
         self.line[1] = self.obj2.verts.x[lmax[0]]
         line = self.line[0] - self.line[1]
 
-
     @ti.kernel
     def aabb_cross_detect1_ballball(self):
         self.DF.deactivate()

@@ -5,7 +5,7 @@ import fem_class as fem
 import collide_detection as cd
 import haptics as ha
 import pyhaptics as ph
-
+import CCD
 def ggui_init():
     window = ti.ui.Window("FEM", (768, 768), vsync=False)
     canvas = window.get_canvas()
@@ -27,7 +27,7 @@ def ggui_run(window, canvas, scene, camera):
     scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
 
-    scene.lines(detector.line, width=1, color=(0, 0, 0))
+    scene.lines(cd.line, width=1, color=(0, 0, 0))
     # scene.particles(bvt_equipment.face_barycenter, 0.0008, (0.9, 0.9, 0.9))
     # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
@@ -50,10 +50,11 @@ if __name__ == '__main__':
     model = fem.Implicit(obj, v_norm=1)
     equipment_model = fem.LoadModel(equipment)
 
-    bvt_obj = cd.aabb_obj(model)
-    bvt_equipment = cd.aabb_obj(equipment_model)
-
-    detector = cd.deceteor(bvt_obj, bvt_equipment)
+    cd = CCD.ccd(model, equipment_model)
+    # bvt_obj = cd.aabb_obj(model)
+    # bvt_equipment = cd.aabb_obj(equipment_model)
+    #
+    # detector = cd.deceteor(bvt_obj, bvt_equipment)
 
     hap = ha.haptices(equipment_model.mesh.verts)
 
@@ -61,6 +62,10 @@ if __name__ == '__main__':
     while window.running:
         if window.is_pressed('r'):
             model.reset()
+        if window.is_pressed('t'):
+            print("x:", model.mesh.verts.x)
+            print("v:", model.mesh.verts.v)
+            print("f:", model.mesh.verts.f)
         if window.get_event(ti.ui.PRESS):
             if window.event.key == 'p':
                 gui_run = not gui_run
@@ -70,10 +75,10 @@ if __name__ == '__main__':
         if gui_run:
             model.substep(1)
 
-            bvt_obj.run()
-            bvt_equipment.run()
-            detector.run()
-
+            # bvt_obj.run()
+            # bvt_equipment.run()
+            # detector.run()
+            cd.run()
             hap.run()
 
         ggui_run(window, canvas, scene, camera)
