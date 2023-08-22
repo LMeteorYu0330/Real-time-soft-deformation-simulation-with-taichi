@@ -24,10 +24,10 @@ def ggui_run(window, canvas, scene, camera):
     scene.ambient_light((0.5, 0.5, 0.5))
     scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
 
-    scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
+    scene.mesh_instance(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
 
-    scene.lines(cd.line, width=1, color=(0, 0, 0))
+    # scene.lines(cd.line, width=1, color=(0, 0, 0))
     # scene.particles(bvt_equipment.face_barycenter, 0.0008, (0.9, 0.9, 0.9))
     # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.min_box_for_draw, width=1, color=(0, 0, 0))
@@ -72,5 +72,6 @@ if __name__ == '__main__':
             model.substep(1)
             hap.run()
             cd.run()
+            hap.set_force(cd.force[None].x, cd.force[None].y, cd.force[None].z)
 
         ggui_run(window, canvas, scene, camera)

@@ -1,9 +1,6 @@
 import pyhaptics as ph
 import taichi as ti
-import fem_class as fem
-import collide_detection as cd
 import numpy as np
-from math import pi
 
 
 @ti.data_oriented
@@ -56,6 +53,10 @@ class haptices:
             self.verts.x[vert].x = T[0]
             self.verts.x[vert].y = T[1] + 0.5
             self.verts.x[vert].z = T[2]
+
+    @staticmethod
+    def set_force(x: ti.f32, y: ti.f32, z: ti.f32):
+        ph.set_force(x, y, z)
 
     def run(self):
         self.get_mat()
