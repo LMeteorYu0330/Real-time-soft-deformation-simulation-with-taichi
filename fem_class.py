@@ -44,7 +44,7 @@ class LoadModel:
             self.line0 = ti.ndarray(dtype=ti.i32, shape=self.min_len)
             self.line1 = ti.ndarray(dtype=ti.i32, shape=self.max_len)
             self.line0 = line_min
-            self.line1 = line_max
+        self.line1 = line_max
 
         self.v_norm = v_norm
         self.vert_num = len(self.mesh.verts)

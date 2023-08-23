@@ -23,8 +23,8 @@ class dcd:
         line = self.line[0] - self.line[1]
         self.force.fill(0)
         for face0 in self.mesh0.faces:
-            # if face0.cells.size == 1:
-            if True:
+            if face0.cells.size == 1:
+            # if True:
                 v0 = self.mesh0.verts.x[face0.verts[0].id]
                 v1 = self.mesh0.verts.x[face0.verts[1].id]
                 v2 = self.mesh0.verts.x[face0.verts[2].id]
