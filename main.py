@@ -38,7 +38,7 @@ def ggui_run(window, canvas, scene, camera):
     # scene.lines(bvt_equipment.layer0_box_for_draw, width=1, color=(0, 0, 0))
     force_vis[0] = cd.line[0]
     force_vis[1] = cd.force[None] * 0.2
-    if cd.force[None].x != 0 or cd.force[None].y != 0 or cd.force[None].z != 0:
+    if cd.force[None].x + cd.force[None].y + cd.force[None].z != 0:
         scene.lines(force_vis, width=1.2, color=(0, 0.8, 0.2))
 
     canvas.scene(scene)

@@ -61,9 +61,9 @@ class dcd:
                 self.mesh0.verts.v[face.verts[i].id].x += d0 * n_nor[0]
                 self.mesh0.verts.v[face.verts[i].id].y += d0 * n_nor[1]
                 self.mesh0.verts.v[face.verts[i].id].z += d0 * n_nor[2]
-                self.force[None].x += -6 * d0 * n_nor[0]
-                self.force[None].y += -6 * d0 * n_nor[1]
-                self.force[None].z += -6 * d0 * n_nor[2]
+                self.force[None].x += -3 * d0 * n_nor[0]
+                self.force[None].y += -3 * d0 * n_nor[1]
+                self.force[None].z += -3 * d0 * n_nor[2]
 
     @ti.func
     def plucker(self, a, b):
