@@ -7,7 +7,7 @@
 * 加入了碰撞检测和碰撞响应
 
 ## 效果预览
-![image](https://github.com/LMeteorYu0330/3d_implicit_fem/blob/master/images/202304221823.mp4)
+![image](images/整体.mp4)
 
 ## 现存的问题
 碰撞响应算法十分基础，有待改进
