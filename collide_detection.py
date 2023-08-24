@@ -1,3 +1,4 @@
+# 此方法不再使用
 import taichi as ti
 
 
