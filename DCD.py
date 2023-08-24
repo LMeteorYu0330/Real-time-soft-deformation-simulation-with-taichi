@@ -14,17 +14,17 @@ class dcd:
         self.faces0_num = len(args[0].mesh.faces)
         self.line = ti.Vector.field(3, dtype=ti.f32, shape=2)
         self.force = ti.Vector.field(3, dtype=ti.f32, shape=())
+
     line_type = ti.types.ndarray(dtype=ti.i32, ndim=1)
 
     @ti.kernel
     def line_tri_detect(self, lmin: line_type, lmax: line_type):
         self.line[0] = self.mesh1.verts.x[lmin[0]]
         self.line[1] = self.mesh1.verts.x[lmax[0]]
-        line = self.line[0] - self.line[1]
         self.force.fill(0)
         for face0 in self.mesh0.faces:
-            if face0.cells.size == 1:
-            # if True:
+            # if face0.cells.size == 1:
+            if True:
                 v0 = self.mesh0.verts.x[face0.verts[0].id]
                 v1 = self.mesh0.verts.x[face0.verts[1].id]
                 v2 = self.mesh0.verts.x[face0.verts[2].id]
@@ -61,9 +61,9 @@ class dcd:
                 self.mesh0.verts.v[face.verts[i].id].x += d0 * n_nor[0]
                 self.mesh0.verts.v[face.verts[i].id].y += d0 * n_nor[1]
                 self.mesh0.verts.v[face.verts[i].id].z += d0 * n_nor[2]
-                self.force[None].x += -7 * d0 * n_nor[0]
-                self.force[None].y += -7 * d0 * n_nor[1]
-                self.force[None].z += -7 * d0 * n_nor[2]
+                self.force[None].x += -6 * d0 * n_nor[0]
+                self.force[None].y += -6 * d0 * n_nor[1]
+                self.force[None].z += -6 * d0 * n_nor[2]
 
     @ti.func
     def plucker(self, a, b):

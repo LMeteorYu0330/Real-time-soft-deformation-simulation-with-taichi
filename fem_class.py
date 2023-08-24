@@ -44,7 +44,7 @@ class LoadModel:
             self.line0 = ti.ndarray(dtype=ti.i32, shape=self.min_len)
             self.line1 = ti.ndarray(dtype=ti.i32, shape=self.max_len)
             self.line0 = line_min
-        self.line1 = line_max
+            self.line1 = line_max
 
         self.v_norm = v_norm
         self.vert_num = len(self.mesh.verts)
@@ -472,7 +472,7 @@ class Implicit(LoadModel):
     def velocity_decay(self):
         for vert in self.mesh.verts:
             for i in range(3):
-                if vert.v[i] <= 2e-4 and ti.math.length(vert.f) <= 0.1:
+                if vert.v[i] <= 1e-4 and ti.math.length(vert.f) <= 0.1:
                     vert.v[i] = 0
 
     def substep(self, step):

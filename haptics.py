@@ -42,7 +42,7 @@ class haptices:
         for i in range(4):
             for j in range(4):
                 if i == 3 and j != 3:
-                    self.mat[0][i, j] = mat[i, j] * 0.01
+                    self.mat[0][i, j] = mat[i, j] * 0.02
                 else:
                     self.mat[0][i, j] = mat[i, j]
 
