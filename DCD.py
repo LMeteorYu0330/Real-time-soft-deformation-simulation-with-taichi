@@ -1,3 +1,5 @@
+import time
+
 import taichi as ti
 import fem_class as fem
 import haptics as ha
@@ -23,8 +25,8 @@ class dcd:
         self.line[1] = self.mesh1.verts.x[lmax[0]]
         self.force.fill(0)
         for face0 in self.mesh0.faces:
-            # if face0.cells.size == 1:
-            if True:
+            if face0.cells.size == 1:
+                # if True:
                 v0 = self.mesh0.verts.x[face0.verts[0].id]
                 v1 = self.mesh0.verts.x[face0.verts[1].id]
                 v2 = self.mesh0.verts.x[face0.verts[2].id]
@@ -43,7 +45,7 @@ class dcd:
                     ss1 = self.sideOp(e2, l3)
                     ss2 = self.sideOp(e2, l2)
                     if ss1 > 0 and ss2 > 0:
-                        self.intersect(0, face0)  # 线穿三角形
+                        self.intersect(1, face0)  # 线穿三角形
                     elif ss1 == 0 or ss2 == 0:
                         self.intersect(0, face0)  # 线的一端触碰到面
                 elif (s1 == 0 and s2 * s3 > 0) or (s2 == 0 and s1 * s3 > 0) or (s3 == 0 and s1 * s2 > 0):
@@ -53,17 +55,23 @@ class dcd:
 
     @ti.func
     def intersect(self, mode, face):
-        if mode == 0:
+        if mode == 0:  # 不合适的力计算函数，但是能work
             for i in range(3):
-                d0 = ti.math.distance(self.mesh0.verts.x[face.verts[i].id], self.line[0])
-                n = self.line[0] - self.mesh0.verts.x[face.verts[i].id]
-                n_nor = ti.math.normalize(n)
-                self.mesh0.verts.v[face.verts[i].id].x += d0 * n_nor[0]
+                d0 = ti.math.distance(self.mesh0.verts.x[face.verts[i].id], self.line[0])  # 计算三角形顶点到线端点的距离
+                n = self.line[0] - self.mesh0.verts.x[face.verts[i].id]  # 计算方向
+                n_nor = ti.math.normalize(n)  # 方向相量单位化
+                self.mesh0.verts.v[face.verts[i].id].x += d0 * n_nor[0]  # 用距离和方向给顶点速度
                 self.mesh0.verts.v[face.verts[i].id].y += d0 * n_nor[1]
                 self.mesh0.verts.v[face.verts[i].id].z += d0 * n_nor[2]
-                self.force[None].x += -3 * d0 * n_nor[0]
+                self.force[None].x += -3 * d0 * n_nor[0]  # 用速度的相反量给力反馈作用力
                 self.force[None].y += -3 * d0 * n_nor[1]
                 self.force[None].z += -3 * d0 * n_nor[2]
+
+        if mode == 1:
+            # 计算面元法线方向
+            edge1 = self.mesh0.verts.x[face.edges[0].verts[1].id] - self.mesh0.verts.x[face.edges[0].verts[0].id]
+            edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
+            face_n = ti.math.normalize(ti.math.cross(edge1, edge2))
 
     @ti.func
     def plucker(self, a, b):
