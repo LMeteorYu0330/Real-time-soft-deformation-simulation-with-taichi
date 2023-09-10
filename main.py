@@ -1,5 +1,3 @@
-import time
-
 import taichi as ti
 import fem_class as fem
 import collide_detection as cd
@@ -36,11 +34,11 @@ def ggui_run(window, canvas, scene, camera):
     # scene.lines(bvt_equipment.layer1_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_obj.layer0_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.layer0_box_for_draw, width=1, color=(0, 0, 0))
-    scene.particles(cd.line, 0.0008, (0.9, 0.9, 0.9))
-    force_vis[0] = cd.line[0]
-    force_vis[1] = cd.line[0] + cd.force[None] * 10
-    if cd.force[None].x + cd.force[None].y + cd.force[None].z != 0:
-        scene.lines(force_vis, width=1.2, color=(0, 0.8, 0.2))
+    # scene.particles(cd.line, 0.0008, (0.9, 0.9, 0.9))
+    # force_vis[0] = cd.line[0]
+    # force_vis[1] = cd.line[0] + cd.force[None]
+    # if cd.force[None].x + cd.force[None].y + cd.force[None].z != 0:
+    #     scene.lines(force_vis, width=1.2, color=(0, 0.8, 0.2))
 
     canvas.scene(scene)
     window.show()
@@ -77,9 +75,9 @@ if __name__ == '__main__':
                 break
 
         if gui_run:
-            model.substep(1)
             hap.run()
             cd.run()
             hap.set_force(cd.force[None].x, cd.force[None].y, cd.force[None].z)
+            model.substep(1)
 
         ggui_run(window, canvas, scene, camera)

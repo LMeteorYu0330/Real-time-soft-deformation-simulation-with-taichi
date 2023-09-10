@@ -18,12 +18,14 @@ class LoadModel:
                 'x': ti.math.vec3,
                 'v': ti.math.vec3,
                 'f': ti.math.vec3,
+                'fe': ti.math.vec3,
                 'ox': ti.math.vec3
             })
             self.mesh.verts.x.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.v.fill(0.0)
             self.mesh.verts.f.fill(0.0)
+            self.mesh.verts.fe.fill(0.0)
             self.indices = ti.field(ti.u32, shape=len(self.mesh.cells) * 4 * 3)
             self.init_tet_indices()
 
@@ -241,6 +243,7 @@ class Implicit(LoadModel):
             vert.x = vert.ox
         self.mesh.verts.v.fill(0.0)
         self.mesh.verts.f.fill(0.0)
+        self.mesh.verts.fe.fill(0.0)
 
     @ti.kernel
     def norm_volume(self):
@@ -270,7 +273,7 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_force_sim_Co_rotated(self):  # 实时力计算
         for vert in self.mesh.verts:
-            vert.f = self.gravity * self.m[vert.id]
+            vert.f = self.gravity * self.m[vert.id] + vert.fe
         for cell in self.mesh.cells:
             Ds = ti.Matrix.zero(ti.f32, 3, 3)
             for i in ti.static(range(3)):
@@ -289,7 +292,7 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_force_Neo_Hookean(self):  # 实时力计算
         for vert in self.mesh.verts:
-            vert.f = self.gravity * self.m[vert.id]
+            vert.f = self.gravity * self.m[vert.id] + vert.fe
         for cell in self.mesh.cells:
             Ds = ti.Matrix.zero(ti.f32, 3, 3)
             for i in ti.static(range(3)):
@@ -310,7 +313,7 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_force_STVK(self):  # 实时力计算
         for vert in self.mesh.verts:
-            vert.f = self.gravity * self.m[vert.id]
+            vert.f = self.gravity * self.m[vert.id] + vert.fe
         for cell in self.mesh.cells:
             Ds = ti.Matrix.zero(ti.f32, 3, 3)
             for i in ti.static(range(3)):
