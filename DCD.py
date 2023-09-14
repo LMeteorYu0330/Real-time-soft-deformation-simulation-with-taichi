@@ -31,8 +31,8 @@ class dcd:
         self.F.fill(0)
         self.face0_n.fill(0)
         for face0 in self.mesh0.faces:
-            # if face0.cells.size == 1:
-            if True:
+            if face0.cells.size == 1:
+            # if True:
                 self.line_tri_detect(face0, self.line[0], self.line[1])
                 self.intersect(face0)
         self.total_force()
