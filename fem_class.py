@@ -302,6 +302,8 @@ class Implicit(LoadModel):
     def fem_get_force_sim_Co_rotated(self):  # 实时力计算
         for vert in self.mesh.verts:
             vert.f = self.gravity * self.m[vert.id] + vert.fe
+            # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
+            #     print(vert.fe)
         for cell in self.mesh.cells:
             Ds = ti.Matrix.zero(ti.f32, 3, 3)
             for i in ti.static(range(3)):
@@ -500,11 +502,12 @@ class Implicit(LoadModel):
                 vert.v[2] *= 0.1
 
     @ti.kernel
-    def velocity_decay(self):
-        for vert in self.mesh.verts:
-            for i in range(3):
-                if vert.v[i] <= 1e-4 and ti.math.length(vert.f) <= 0.1:
-                    vert.v[i] = 0
+    def decay(self):
+        # for vert in self.mesh.verts:
+        #     for i in range(3):
+        #         if vert.v[i] <= 1e-4 and ti.math.length(vert.f) <= 0.1:
+        #             vert.v[i] = 0
+        self.mesh.verts.fe.fill(0)
 
     def substep(self, step):
         for i in range(step):
@@ -514,7 +517,7 @@ class Implicit(LoadModel):
             self.fem_get_b()
             self.cg(5, 0.5)
             self.boundary_condition()
-            self.velocity_decay()
+            self.decay()
 
     @ti.func
     def ssvd(self, fai):

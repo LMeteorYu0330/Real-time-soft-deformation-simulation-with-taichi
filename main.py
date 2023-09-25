@@ -51,10 +51,12 @@ if __name__ == '__main__':
     window, canvas, scene, camera = ggui_init()
     force_vis = ti.Vector.field(3, dtype=ti.f32, shape=2)
 
-    obj = "model/liver_houdini/liver.node"
+    obj1 = "model/liver_houdini/liver.node"
+    obj2 = "model/liver/liver0.node"
     equipment = "model/equipment/zhen.obj"
 
-    model = fem.Implicit(obj, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi)
+    model = fem.Implicit(obj1, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi)
+    # model = fem.Implicit(obj2, v_norm=1)
     equipment_model = fem.LoadModel(equipment, v_norm=1e-3)
 
     hap = ha.haptices(equipment_model.mesh.verts, 0, 1 / 2 * ti.math.pi)
