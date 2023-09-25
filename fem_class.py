@@ -206,9 +206,12 @@ class Explicit(LoadModel):  # This class only for tetrahedron
 
 @ti.data_oriented
 class Implicit(LoadModel):
-    def __init__(self, filename, v_norm=1):
+    def __init__(self, filename, v_norm=1, replace_direction=0, replace_alpha=0):
         super().__init__(filename)
         self.v_norm = v_norm
+        self.replace_direction = replace_direction
+        self.replace_alpha = replace_alpha
+        self.rota_mat = ti.Matrix.field(3, 3, dtype=ti.f32, shape=1)
 
         self.dt = 1.0 / 30
         self.gravity = ti.Vector([0.0, -9.8, 0.0])
@@ -236,6 +239,8 @@ class Implicit(LoadModel):
         self.mul_ans = ti.Vector.field(3, dtype=ti.f32, shape=self.vert_num)
         self.norm_volume()
         self.fem_pre_cal()
+        if self.replace_alpha:
+            self.replace(self.replace_direction, self.replace_alpha)
 
     @ti.kernel
     def reset(self):
@@ -255,8 +260,31 @@ class Implicit(LoadModel):
             self.V[None] += -(1.0 / 6.0) * v.determinant()
         if self.v_norm != 0:
             for vert in self.mesh.verts:
-                vert.x *= 1000 / self.V[None]
-                vert.ox *= 1000 / self.V[None]
+                vert.x *= 1000 / self.V[None] * self.v_norm
+                vert.ox *= 1000 / self.V[None] * self.v_norm
+
+    @ti.kernel
+    def replace(self, direction: ti.i32, alpha: ti.f32):
+        if direction == 0:
+            self.rota_mat[0] = ([[1, 0, 0],
+                                 [0, ti.cos(alpha), ti.sin(alpha)],
+                                 [0, -ti.sin(alpha), ti.cos(alpha)]
+                                 ])
+        elif direction == 1:
+            self.rota_mat[0] = ([[ti.cos(alpha), 0, -ti.sin(alpha)],
+                                 [0, 1, 0],
+                                 [ti.sin(alpha), 0, ti.cos(alpha)],
+                                 ])
+        else:
+            self.rota_mat[0] = ([[ti.cos(alpha), ti.sin(alpha), 0],
+                                 [-ti.sin(alpha), ti.cos(alpha), 0],
+                                 [0, 0, 1]
+                                 ])
+        for vert in self.mesh.verts.ox:
+            Tox = self.mesh.verts.ox[vert] @ self.rota_mat[0]
+            Tx = self.mesh.verts.x[vert] @ self.rota_mat[0]
+            self.mesh.verts.ox[vert] = Tox
+            self.mesh.verts.x[vert] = Tx
 
     @ti.kernel
     def fem_pre_cal(self):
