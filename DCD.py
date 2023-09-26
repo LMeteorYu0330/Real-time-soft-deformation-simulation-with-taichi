@@ -14,6 +14,8 @@ class dcd:
         self.line = ti.Vector.field(3, dtype=ti.f32, shape=2)
         self.force = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.face0_n = ti.Vector.field(3, dtype=ti.f32, shape=self.faces0_num)
+        self.proxy_position = ti.Vector.field(3, dtype=ti.f32, shape=())
+        self.cross = ti.field(dtype=ti.i32, shape=())
 
         self.cross_flag0 = ti.field(ti.i32, shape=self.faces0_num)
         self.F = ti.Vector.field(1, dtype=ti.f32, shape=self.faces0_num)
@@ -32,10 +34,18 @@ class dcd:
         self.face0_n.fill(0)
         for face0 in self.mesh0.faces:
             if face0.cells.size == 1:
-            # if True:
+                # if True:
                 self.line_tri_detect(face0, self.line[0], self.line[1])
                 self.intersect(face0)
+
         self.total_force()
+
+    @ti.kernel
+    def proxy(self):
+        T = self.proxy_position[None] - self.line[0]
+        for vert1 in self.mesh1.verts:
+            vert1.x += T
+        self.proxy_position.fill(0)
 
     @ti.func
     def line_tri_detect(self, face0, lmin, lmax):
@@ -57,6 +67,7 @@ class dcd:
             ss2 = self.sideOp(e2, l2)
             if ss1 > 0 and ss2 > 0:
                 self.cross_flag0[face0.id] = 1
+                self.cross[None] = 1
             # elif ss1 == 0 or ss2 == 0:
             # 线的一端触碰到面
             # elif (s1 == 0 and s2 * s3 > 0) or (s2 == 0 and s1 * s3 > 0) or (s3 == 0 and s1 * s2 > 0):
@@ -83,26 +94,15 @@ class dcd:
             # self.mesh0.verts.v[face.verts[0].id] += -20 * self.F[face.id][0] * self.face0_n[face.id]
             # self.mesh0.verts.v[face.verts[1].id] += -20 * self.F[face.id][0] * self.face0_n[face.id]
             # self.mesh0.verts.v[face.verts[2].id] += -20 * self.F[face.id][0] * self.face0_n[face.id]
-
             self.pre_d0[None][0] = d0
             self.cross_flag0[face.id] = 0
+            # self.proxy_position[None] = (self.mesh0.verts.x[face.verts[0].id]
+            #                              + self.mesh0.verts.x[face.verts[0].id]
+            #                              + self.mesh0.verts.x[face.verts[0].id]) / 3
+            self.proxy_position[None] = face_cen
+        else:
+            self.proxy_position[None] = self.line[0]
 
-        # if self.cross_flag[None] == 2:  # 不合适的力计算函数，但是能work
-        #     for i in range(3):
-        #         d0 = ti.math.distance(self.mesh0.verts.x[face.verts[i].id], self.line[0])
-        #         n = self.line[0] - self.mesh0.verts.x[face.verts[i].id]
-        #         n_nor = ti.math.normalize(n)
-        #         self.mesh0.verts.v[face.verts[i].id].x += d0 * n_nor[0]
-        #         self.mesh0.verts.v[face.verts[i].id].y += d0 * n_nor[1]
-        #         self.mesh0.verts.v[face.verts[i].id].z += d0 * n_nor[2]
-        #         self.force[None].x += -3 * d0 * n_nor[0]
-        #         self.force[None].y += -3 * d0 * n_nor[1]
-        #         self.force[None].z += -3 * d0 * n_nor[2]
-        #         self.cross_flag[None] = 0
-        # # 计算面元法线方向
-        # edge1 = self.mesh0.verts.x[face.edges[0].verts[1].id] - self.mesh0.verts.x[face.edges[0].verts[0].id]
-        # edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
-        # face_n = ti.math.normalize(ti.math.cross(edge1, edge2))
     @ti.func
     def total_force(self):
         n = self.line[1] - self.line[0]
@@ -127,6 +127,7 @@ class dcd:
 
     def run(self):
         self.detect(self.obj1.line0, self.obj1.line1)
+        self.proxy()
 
 
 if __name__ == '__main__':
