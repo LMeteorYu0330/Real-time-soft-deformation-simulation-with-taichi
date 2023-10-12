@@ -7,11 +7,12 @@ python3 -m pip install -U taichi meshtaichi_patcher
 ```
 * 连接好力反馈设备Touch（使用默认名称）
 * 直接运行main.py
-## 基于python的显式/隐式有限元
+## 基于python的隐式有限元弹性器官仿真
 * 参考taichi的ti example fem的算法
 * 弹性体有限元仿真
 * 加入了力反馈设备交互
 * 加入了碰撞检测和碰撞响应
+* 使用虚位代理算法解决穿模问题
 
 ## 效果预览
 ![image](images/整体.mp4)
@@ -20,8 +21,9 @@ python3 -m pip install -U taichi meshtaichi_patcher
 碰撞响应算法十分基础，有待改进
 
 ## 后续计划
-* 1、加入场景
-* 2、更新本构模型和力响应模型
+* 1、加入手术场景
+* 2、更新本构模型、数值求解器和力响应模型
+* 3、完善readme
 
 ## 注意
 * 1、环境问题：python3.8+taichi1.4.1版本运行最佳，在新版本的taichi环境中运行会掉帧，原因不明
