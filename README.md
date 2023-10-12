@@ -1,4 +1,4 @@
-# 3d_ex\implicit_fem
+# 基于taichi和FEM的实时虚拟手术交互仿真
 ## 使用方法
 * 安装环境
 ```
