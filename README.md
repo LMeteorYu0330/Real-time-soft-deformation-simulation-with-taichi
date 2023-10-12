@@ -28,5 +28,5 @@ python3 -m pip install -U taichi meshtaichi_patcher
 ## 注意
 * 1、环境问题：python3.8+taichi1.4.1版本运行最佳，在新版本的taichi环境中运行会掉帧，原因不明
 * 2、需要搭配力反馈设备touch使用，也可以在代码main中将力反馈相关部分注释掉，只运行仿真部分
-* 3、pyhaptics.pyd文件是编译的力反馈函数库，仅适用于windows环境，放在anaconda对应虚拟环境的Lib/site-package文件夹下可以解析显示函数接口，直接放在脚本同一目录下仅能使用
+* 3、pyhaptics.pyd文件是编译的力反馈函数库，仅适用于windows环境，放在anaconda对应虚拟环境的Lib\site-package文件夹下可以解析显示函数接口，直接放在脚本同一目录下仅能使用
 
