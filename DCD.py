@@ -75,9 +75,9 @@ class dcd:
             d0 = ti.math.distance(self.corss_pot[0], self.line[0])  # 计算三角形质心到线端点的距离
             self.F[face.id] = self.K * d0 + self.D * (d0 - self.pre_d0[None])
             # 用距离和方向给顶点力
-            self.mesh0.verts.fe[face.verts[0].id] += -20000 * self.F[face.id][0] * self.face0_n[face.id]
-            self.mesh0.verts.fe[face.verts[1].id] += -20000 * self.F[face.id][0] * self.face0_n[face.id]
-            self.mesh0.verts.fe[face.verts[2].id] += -20000 * self.F[face.id][0] * self.face0_n[face.id]
+            self.mesh0.verts.fe[face.verts[0].id] += -9000 * self.F[face.id][0] * self.face0_n[face.id]
+            self.mesh0.verts.fe[face.verts[1].id] += -9000 * self.F[face.id][0] * self.face0_n[face.id]
+            self.mesh0.verts.fe[face.verts[2].id] += -9000 * self.F[face.id][0] * self.face0_n[face.id]
             # 用距离和方向给顶点速度
             # self.mesh0.verts.v[face.verts[0].id] += -20 * self.F[face.id][0] * self.face0_n[face.id]
             # self.mesh0.verts.v[face.verts[1].id] += -20 * self.F[face.id][0] * self.face0_n[face.id]

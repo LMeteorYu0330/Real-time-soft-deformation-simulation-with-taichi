@@ -34,12 +34,13 @@ def ggui_run(window, canvas, scene, camera):
     # scene.lines(bvt_equipment.layer1_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_obj.layer0_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.layer0_box_for_draw, width=1, color=(0, 0, 0))
-    scene.particles(cd.corss_pot, 0.008, (0.9, 0.9, 0.9))
+    # scene.particles(cd.corss_pot, 0.008, (0.9, 0.9, 0.9))
+    # scene.particles(cd.line, 0.008, (0.9, 0.9, 0.9))
 
-    force_vis[0] = cd.line[0]
-    force_vis[1] = cd.line[0] + cd.force[None]
-    if cd.force[None].x + cd.force[None].y + cd.force[None].z != 0:
-        scene.lines(force_vis, width=1.2, color=(0, 0.8, 0.2))
+    # force_vis[0] = cd.line[0]
+    # force_vis[1] = cd.line[0] + cd.force[None]
+    # if cd.force[None].x + cd.force[None].y + cd.force[None].z != 0:
+    #     scene.lines(force_vis, width=1.2, color=(0, 0.8, 0.2))
 
     canvas.scene(scene)
     window.show()
@@ -65,15 +66,15 @@ if __name__ == '__main__':
 
     gui_run = True
     while window.running:
-        if window.is_pressed('r'):
-            model.reset()
-        if window.is_pressed('t'):
-            print("x:", model.mesh.verts.x)
-            print("v:", model.mesh.verts.v)
-            print("f:", model.mesh.verts.f)
+        # if window.is_pressed('r'):
+        #     model.reset()
+        # if window.is_pressed('t'):
+        #     print("x:", model.mesh.verts.x)
+        #     print("v:", model.mesh.verts.v)
+        #     print("f:", model.mesh.verts.f)
         if window.get_event(ti.ui.PRESS):
-            if window.event.key == 'p':
-                gui_run = not gui_run
+            # if window.event.key == 'p':
+            #     gui_run = not gui_run
             if window.event.key == ti.ui.ESCAPE:
                 break
 
