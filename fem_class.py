@@ -33,12 +33,14 @@ class LoadModel:
             self.mesh_rawdata = mp.load_mesh_rawdata(filename)
             self.mesh = mp.load_mesh(self.mesh_rawdata, relations=["FV"])
             self.mesh.verts.place({'x': ti.math.vec3,
-                                   'ox': ti.math.vec3})
+                                   'ox': ti.math.vec3,
+                                   'rx': ti.math.vec3})
             self.mesh.verts.x.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
+            self.mesh.verts.rx.from_numpy(self.mesh.get_position_as_numpy())
             self.indices = ti.field(ti.i32, shape=len(self.mesh.faces) * 3)
             self.init_surf_indices()
-            x_np = self.mesh.verts.x.to_numpy()[:, 1]
+            x_np = self.mesh.verts.rx.to_numpy()[:, 1]
             line_min = np.where(x_np == x_np.min(0))[0]
             line_max = np.where(x_np == x_np.max(0))[0]
             self.min_len = len(line_min)

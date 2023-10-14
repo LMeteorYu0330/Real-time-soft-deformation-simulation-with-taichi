@@ -53,6 +53,7 @@ class haptices:
             self.verts.x[vert].x = T[0]
             self.verts.x[vert].y = T[1] + 0.5
             self.verts.x[vert].z = T[2]
+            self.verts.rx[vert] = self.verts.x[vert]
 
     @staticmethod
     def set_force(x: ti.f32, y: ti.f32, z: ti.f32):

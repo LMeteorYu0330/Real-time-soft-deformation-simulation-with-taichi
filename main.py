@@ -34,7 +34,7 @@ def ggui_run(window, canvas, scene, camera):
     # scene.lines(bvt_equipment.layer1_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_obj.layer0_box_for_draw, width=1, color=(0, 0, 0))
     # scene.lines(bvt_equipment.layer0_box_for_draw, width=1, color=(0, 0, 0))
-    # scene.particles(cd.line, 0.0008, (0.9, 0.9, 0.9))
+    scene.particles(cd.corss_pot, 0.008, (0.9, 0.9, 0.9))
 
     force_vis[0] = cd.line[0]
     force_vis[1] = cd.line[0] + cd.force[None]
