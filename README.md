@@ -14,7 +14,7 @@ python3 -m pip install -U taichi meshtaichi_patcher
 * 使用虚位代理算法解决穿模问题
 
 ## 效果预览
-![image](https://github.com/LMeteorYu0330/Real-time-surgery-simulation-with-taichi/blob/master/images/2023-10-14.mp4)
+![image]([https://github.com/LMeteorYu0330/Real-time-surgery-simulation-with-taichi/blob/master/images/2023-10-14.mp4](https://github.com/LMeteorYu0330/Real-time-surgery-simulation-with-taichi/raw/master/images/2023-10-14.mp4))
 
 ## 现存的问题
 碰撞响应算法十分基础，有待改进
