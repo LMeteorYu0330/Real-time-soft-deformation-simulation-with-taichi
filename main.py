@@ -79,8 +79,8 @@ if __name__ == '__main__':
                 break
 
         if gui_run:
-            hap.run()
             cd.run()
+            hap.run()
             hap.set_force(cd.force[None].x, cd.force[None].y, cd.force[None].z)
             model.substep(1)
 

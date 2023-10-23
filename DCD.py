@@ -40,8 +40,8 @@ class dcd:
         self.face0_n.fill(0)
         for face0 in self.mesh0.faces:
             # if face0.cells.size == 1:
-            if True:
-                self.line_tri_detect(face0, self.line[0], self.line[1])
+            # if True:
+            self.line_tri_detect(face0, self.line[0], self.line[1])
         for face0 in self.mesh0.faces:
             self.intersect(face0)
         self.total_force()
@@ -72,7 +72,7 @@ class dcd:
             S2 = ti.math.cross(S, E1)
             t = (S2 @ E2)/(S1 @ E1)
             self.corss_pot[0] = self.line[1] + t * self.line_dir[0]
-            d0 = ti.math.distance(self.corss_pot[0], self.line[0])  # 计算三角形质心到线端点的距离
+            d0 = ti.math.distance(self.corss_pot[0], self.line[0])  # 计算代理点到线端点的距离
             self.F[face.id] = self.K * d0 + self.D * (d0 - self.pre_d0[None])
             # 用距离和方向给顶点力
             self.mesh0.verts.fe[face.verts[0].id] += -9000 * self.F[face.id][0] * self.face0_n[face.id]

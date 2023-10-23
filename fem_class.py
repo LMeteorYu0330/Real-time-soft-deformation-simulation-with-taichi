@@ -17,6 +17,7 @@ class LoadModel:
             self.mesh.verts.place({
                 'x': ti.math.vec3,
                 'v': ti.math.vec3,
+                'pf': ti.math.vec3,
                 'f': ti.math.vec3,
                 'fe': ti.math.vec3,
                 'ox': ti.math.vec3
@@ -24,6 +25,7 @@ class LoadModel:
             self.mesh.verts.x.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.v.fill(0.0)
+            self.mesh.verts.pf.fill(0.0)
             self.mesh.verts.f.fill(0.0)
             self.mesh.verts.fe.fill(0.0)
             self.indices = ti.field(ti.u32, shape=len(self.mesh.cells) * 4 * 3)
@@ -86,127 +88,6 @@ class LoadModel:
 
 
 @ti.data_oriented
-class Explicit(LoadModel):  # This class only for tetrahedron
-    def __init__(self, filename, v_norm=1):
-        super().__init__(filename)
-        self.v_norm = v_norm
-
-        self.dt = 7e-4
-        self.gravity = ti.Vector([0.0, -9.8, 0.0])
-        self.e = 2e6  # 杨氏模量
-        self.nu = 0.1  # 泊松系数
-        self.mu = self.e / (2 * (1 + self.nu))
-        self.la = self.e * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
-        self.density = 1e5
-
-        self.cell_num = len(self.mesh.cells)
-        self.V = ti.field(dtype=ti.f32, shape=())
-        self.Dm = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)  # Dm
-        self.W = ti.field(ti.f32, shape=self.cell_num)  # 四面体体积
-        self.B = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)  # Dm逆
-        self.m = ti.field(ti.f32, shape=self.vert_num)  # 点的质量
-        self.F = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
-        self.E = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
-
-        self.norm_volume()
-        self.fem_pre_cal()
-
-    @ti.kernel
-    def reset(self):
-        for vert in self.mesh.verts:
-            vert.x = vert.ox
-        self.mesh.verts.v.fill(0.0)
-        self.mesh.verts.f.fill(0.0)
-
-    @ti.kernel
-    def norm_volume(self):
-        for cell in self.mesh.cells:
-            v = ti.Matrix.zero(ti.f32, 3, 3)
-            for i in ti.static(range(3)):
-                for j in ti.static(range(3)):
-                    v[j, i] = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
-            self.V[None] += -(1.0 / 6.0) * v.determinant()
-        if self.v_norm == 1:
-            for vert in self.mesh.verts:
-                vert.x *= 1000 / self.V[None]
-                vert.ox *= 1000 / self.V[None]
-
-    @ti.kernel
-    def fem_pre_cal(self):  # fem参数预计算
-        self.V[None] = 0
-        for cell in self.mesh.cells:
-            for i in ti.static(range(3)):
-                for j in ti.static(range(3)):
-                    self.Dm[cell.id][j, i] \
-                        = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
-            self.B[cell.id] = self.Dm[cell.id].inverse()
-            self.W[cell.id] = -(1.0 / 6.0) * self.Dm[cell.id].determinant()
-            self.V[None] += self.W[cell.id]
-            for i in ti.static(range(4)):
-                self.m[cell.verts[i].id] += 0.25 * self.density * self.W[cell.id]  # 把体元质量均分到四个顶点
-
-    @ti.kernel
-    def fem_get_force(self):  # 实时力计算
-        for vert in self.mesh.verts:
-            vert.f = self.gravity * self.m[vert.id]
-        for cell in self.mesh.cells:
-            Ds = ti.Matrix.zero(ti.f32, 3, 3)
-            for i in ti.static(range(3)):
-                for j in ti.static(range(3)):
-                    Ds[j, i] \
-                        = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
-            self.F[cell.id] = Ds @ self.B[cell.id]
-            self.E[cell.id] = 0.5 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
-            U, sig, V = self.ssvd(self.F[cell.id])
-            P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose())
-            # P = self.F[cell.id] @ (2 * self.mu * self.E[cell.id] + self.la * self.E[cell.id].trace() * self.I)
-            H = -self.W[cell.id] * P @ self.B[cell.id].transpose()
-            for i in ti.static(range(3)):
-                fi = ti.Vector([H[0, i], H[1, i], H[2, i]])
-                self.mesh.verts.f[cell.verts[i].id] += fi
-                self.mesh.verts.f[cell.verts[3].id] += -fi
-
-    @ti.func
-    def ssvd(self, fai):
-        U, sig, V = ti.svd(fai)
-        if U.determinant() < 0:
-            for i in ti.static(range(3)):
-                U[i, 2] *= -1
-            sig[2, 2] = -sig[2, 2]
-        if V.determinant() < 0:
-            for i in ti.static(range(3)):
-                V[i, 2] *= -1
-            sig[2, 2] = -sig[2, 2]
-        return U, sig, V
-
-    @ti.kernel
-    def explicit_time_integral(self):
-        for vert in self.mesh.verts:
-            vert.v += self.dt * vert.f / self.m[vert.id] * 0.0000125
-            vert.x += vert.v * self.dt
-
-    @ti.kernel
-    def boundary_condition(self):
-        bounds = ti.Vector([1.0, 0.1, 1.0])
-        for vert in self.mesh.verts:
-            for i in ti.static(range(3)):
-                if vert.x[i] < -bounds[i]:
-                    vert.x[i] = -bounds[i]
-                    if vert.v[i] < 0.0:
-                        vert.v[i] = 0.0
-                if vert.x[i] > bounds[i]:
-                    vert.x[i] = bounds[i]
-                    if vert.v[i] > 0.0:
-                        vert.v[i] = 0.0
-
-    def substep(self, step):
-        for i in range(step):
-            self.fem_get_force()
-            self.explicit_time_integral()
-            self.boundary_condition()
-
-
-@ti.data_oriented
 class Implicit(LoadModel):
     def __init__(self, filename, v_norm=1, replace_direction=0, replace_alpha=0):
         super().__init__(filename)
@@ -222,6 +103,9 @@ class Implicit(LoadModel):
         self.mu = self.e / (2 * (1 + self.nu))
         self.la = self.e * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
         self.density = 5e5
+        self.eta = 2  # 粘滞阻尼系数
+        self.E1 = 2.5
+        self.E2 = 1.5
 
         self.cell_num = len(self.mesh.cells)
         self.V = ti.field(dtype=ti.f32, shape=())
@@ -230,6 +114,7 @@ class Implicit(LoadModel):
         self.B = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)  # Dm逆
         self.m = ti.field(ti.f32, shape=self.vert_num)  # 点的质量
         self.F = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
+        self.F_old = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
         self.E = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
 
         self.b = ti.Vector.field(3, dtype=ti.f32, shape=self.vert_num)
@@ -304,6 +189,7 @@ class Implicit(LoadModel):
     def fem_get_force_sim_Co_rotated(self):  # 实时力计算
         for vert in self.mesh.verts:
             vert.f = self.gravity * self.m[vert.id] + vert.fe
+            vert.pf = vert.f
             # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
             #     print(vert.fe)
         for cell in self.mesh.cells:
@@ -321,6 +207,40 @@ class Implicit(LoadModel):
                 self.mesh.verts.f[cell.verts[i].id] += fi
                 self.mesh.verts.f[cell.verts[3].id] += -fi
 
+        for vert in self.mesh.verts:
+            decay = vert.f - vert.pf
+            vert.f -= 0.8 * decay
+
+    @ti.kernel
+    def fem_get_force_Kelvin(self):  # 实时力计算
+        for vert in self.mesh.verts:
+            vert.f = self.gravity * self.m[vert.id] + vert.fe
+            # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
+            #     print(vert.fe)
+        for cell in self.mesh.cells:
+            Ds = ti.Matrix.zero(ti.f32, 3, 3)
+            for i in ti.static(range(3)):
+                for j in ti.static(range(3)):
+                    Ds[j, i] \
+                        = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
+            self.F[cell.id] = Ds @ self.B[cell.id]
+            U, sig, V = self.ssvd(self.F[cell.id])
+            sigma = 1 / 2 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
+            sigma_old = 1 / 2 * (self.F_old[cell.id].transpose() @ self.F_old[cell.id] - self.I)
+            delta_epsilon = sigma - sigma_old
+            # sigma_c = self.eta * delta_epsilon / self.dt
+            sigma_c = self.E1 ** 2 * sigma / (self.E1 + self.E2) * (
+                        1 - ti.exp((self.E1 - self.E2) * self.dt / self.eta))
+            P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose()) + \
+                self.la * ((U @ V.transpose()).transpose() @ self.F[cell.id] - self.I).trace() * (U @ V.transpose())
+            P += sigma_c
+            H = -self.W[cell.id] * P @ self.B[cell.id].transpose()
+            for i in ti.static(range(3)):
+                fi = ti.Vector([H[0, i], H[1, i], H[2, i]])
+                self.mesh.verts.f[cell.verts[i].id] += fi
+                self.mesh.verts.f[cell.verts[3].id] += -fi
+            self.F_old[cell.id] = self.F[cell.id]
+
     @ti.kernel
     def fem_get_force_Neo_Hookean(self):  # 实时力计算
         for vert in self.mesh.verts:
@@ -332,8 +252,8 @@ class Implicit(LoadModel):
                     Ds[j, i] \
                         = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
             self.F[cell.id] = Ds @ self.B[cell.id]
-            J = ti.max(self.F[cell.id].determinant(), 0.01)
-            logJ = ti.log(J) / ti.log(10)
+            J = self.F[cell.id].determinant()
+            logJ = ti.log(J)
             F_inv_tran = self.F[cell.id].inverse().transpose()
             P = self.mu * (self.F[cell.id] - F_inv_tran) + self.la * logJ * F_inv_tran
             H = -self.W[cell.id] * P @ self.B[cell.id].transpose()
@@ -391,6 +311,37 @@ class Implicit(LoadModel):
                             ret[verts[u].id][d] += -self.dt ** 2 * dH[j, i] * tmp
 
     @ti.kernel
+    def mat_mul_Kelvin(self, ret: ti.template(), vel: ti.template()):
+        for vert in self.mesh.verts:
+            ret[vert.id] = vel[vert.id] * self.m[vert.id]
+        for cell in self.mesh.cells:
+            verts = cell.verts
+            W_c = self.W[cell.id]
+            B_c = self.B[cell.id]
+            for u in ti.static(range(4)):
+                for d in (range(3)):
+                    dD = ti.Matrix.zero(ti.f32, 3, 3)
+                    if u == 3:
+                        for j in ti.static(range(3)):
+                            dD[d, j] = -1
+                    else:
+                        dD[d, u] = 1
+                    dF = dD @ B_c
+                    sigma = 1 / 2 * (dF.transpose() @ self.F[cell.id]) + 1 / 2 * (self.F[cell.id].transpose() @ dF)
+                    U, sig, V = self.ssvd(dF)
+                    dP = 2 * self.mu * (dF - U @ V.transpose()) + \
+                         self.la * ((U @ V.transpose()).transpose() @ self.F[cell.id] - self.I).trace()
+                    sigma_c = self.E1 ** 2 / (self.E1 + self.E2) * (
+                            1 - ti.exp((self.E1 - self.E2) * self.dt / self.eta))
+                    sigma *= sigma_c
+                    dP += sigma
+                    dH = -W_c * dP @ B_c.transpose()
+                    for i in ti.static(range(3)):
+                        for j in ti.static(range(3)):
+                            tmp = (vel[verts[i].id][j] - vel[verts[3].id][j])
+                            ret[verts[u].id][d] += -self.dt ** 2 * dH[j, i] * tmp
+
+    @ti.kernel
     def mat_mul_STVK(self, ret: ti.template(), vel: ti.template()):
         for vert in self.mesh.verts:
             ret[vert.id] = vel[vert.id] * self.m[vert.id]
@@ -427,8 +378,8 @@ class Implicit(LoadModel):
             W_c = self.W[cell.id]
             B_c = self.B[cell.id]
             F = self.F[cell.id]
-            J = ti.max(F.determinant(), 0.01)
-            logJ = ti.log(J) / ti.log(10)
+            J = F.determinant()
+            logJ = ti.log(J)
             F_inv_tran = F.inverse().transpose()
             for u in ti.static(range(4)):
                 for d in (range(3)):
@@ -446,12 +397,13 @@ class Implicit(LoadModel):
                     for i in ti.static(range(3)):
                         for j in ti.static(range(3)):
                             tmp = (vel[verts[i].id][j] - vel[verts[3].id][j])
-                            ret[verts[u].id][d] += -self.dt ** 2 * dH[j, i] * tmp
+                            ret[verts[i].id][j] += -self.dt ** 2 * dH[u, d] * tmp
 
     def cg(self, n_iter, epsilon):
         # self.mat_mul_STVK(self.mul_ans, self.mesh.verts.v)
         self.mat_mul_sim_Co_rotated(self.mul_ans, self.mesh.verts.v)
         # self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.mesh.verts.v)
+        # self.mat_mul_Kelvin(self.mul_ans, self.mesh.verts.v)
         self.add(self.r0, self.b, -1, self.mul_ans)
         self.p0.copy_from(self.r0)
         r_2 = self.dot(self.r0, self.r0)
@@ -461,6 +413,7 @@ class Implicit(LoadModel):
             # self.mat_mul_STVK(self.mul_ans, self.p0)
             # self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.p0)
             self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
+            # elf.mat_mul_Kelvin(self.mul_ans, self.p0)
             dot_ans = self.dot(self.p0, self.mul_ans)
             alpha = r_2_new / (dot_ans + epsilon)
             self.add(self.mesh.verts.v, self.mesh.verts.v, alpha, self.p0)
@@ -514,10 +467,11 @@ class Implicit(LoadModel):
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
+            # self.fem_get_force_Kelvin()
             # self.fem_get_force_STVK()
             # self.fem_get_force_Neo_Hookean()
             self.fem_get_b()
-            self.cg(5, 0.5)
+            self.cg(5, 1e-5)
             self.boundary_condition()
             self.decay()
 
@@ -533,3 +487,123 @@ class Implicit(LoadModel):
                 V[i, 2] *= -1
             sig[2, 2] = -sig[2, 2]
         return U, sig, V
+
+# @ti.data_oriented
+# class Explicit(LoadModel):  # This class only for tetrahedron
+#     def __init__(self, filename, v_norm=1):
+#         super().__init__(filename)
+#         self.v_norm = v_norm
+#
+#         self.dt = 7e-4
+#         self.gravity = ti.Vector([0.0, -9.8, 0.0])
+#         self.e = 2e6  # 杨氏模量
+#         self.nu = 0.1  # 泊松系数
+#         self.mu = self.e / (2 * (1 + self.nu))
+#         self.la = self.e * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
+#         self.density = 1e5
+#
+#         self.cell_num = len(self.mesh.cells)
+#         self.V = ti.field(dtype=ti.f32, shape=())
+#         self.Dm = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)  # Dm
+#         self.W = ti.field(ti.f32, shape=self.cell_num)  # 四面体体积
+#         self.B = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)  # Dm逆
+#         self.m = ti.field(ti.f32, shape=self.vert_num)  # 点的质量
+#         self.F = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
+#         self.E = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
+#
+#         self.norm_volume()
+#         self.fem_pre_cal()
+#
+#     @ti.kernel
+#     def reset(self):
+#         for vert in self.mesh.verts:
+#             vert.x = vert.ox
+#         self.mesh.verts.v.fill(0.0)
+#         self.mesh.verts.f.fill(0.0)
+#
+#     @ti.kernel
+#     def norm_volume(self):
+#         for cell in self.mesh.cells:
+#             v = ti.Matrix.zero(ti.f32, 3, 3)
+#             for i in ti.static(range(3)):
+#                 for j in ti.static(range(3)):
+#                     v[j, i] = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
+#             self.V[None] += -(1.0 / 6.0) * v.determinant()
+#         if self.v_norm == 1:
+#             for vert in self.mesh.verts:
+#                 vert.x *= 1000 / self.V[None]
+#                 vert.ox *= 1000 / self.V[None]
+#
+#     @ti.kernel
+#     def fem_pre_cal(self):  # fem参数预计算
+#         self.V[None] = 0
+#         for cell in self.mesh.cells:
+#             for i in ti.static(range(3)):
+#                 for j in ti.static(range(3)):
+#                     self.Dm[cell.id][j, i] \
+#                         = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
+#             self.B[cell.id] = self.Dm[cell.id].inverse()
+#             self.W[cell.id] = -(1.0 / 6.0) * self.Dm[cell.id].determinant()
+#             self.V[None] += self.W[cell.id]
+#             for i in ti.static(range(4)):
+#                 self.m[cell.verts[i].id] += 0.25 * self.density * self.W[cell.id]  # 把体元质量均分到四个顶点
+#
+#     @ti.kernel
+#     def fem_get_force(self):  # 实时力计算
+#         for vert in self.mesh.verts:
+#             vert.f = self.gravity * self.m[vert.id]
+#         for cell in self.mesh.cells:
+#             Ds = ti.Matrix.zero(ti.f32, 3, 3)
+#             for i in ti.static(range(3)):
+#                 for j in ti.static(range(3)):
+#                     Ds[j, i] \
+#                         = self.mesh.verts.x[cell.verts[i].id][j] - self.mesh.verts.x[cell.verts[3].id][j]
+#             self.F[cell.id] = Ds @ self.B[cell.id]
+#             self.E[cell.id] = 0.5 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
+#             U, sig, V = self.ssvd(self.F[cell.id])
+#             P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose())
+#             # P = self.F[cell.id] @ (2 * self.mu * self.E[cell.id] + self.la * self.E[cell.id].trace() * self.I)
+#             H = -self.W[cell.id] * P @ self.B[cell.id].transpose()
+#             for i in ti.static(range(3)):
+#                 fi = ti.Vector([H[0, i], H[1, i], H[2, i]])
+#                 self.mesh.verts.f[cell.verts[i].id] += fi
+#                 self.mesh.verts.f[cell.verts[3].id] += -fi
+#
+#     @ti.func
+#     def ssvd(self, fai):
+#         U, sig, V = ti.svd(fai)
+#         if U.determinant() < 0:
+#             for i in ti.static(range(3)):
+#                 U[i, 2] *= -1
+#             sig[2, 2] = -sig[2, 2]
+#         if V.determinant() < 0:
+#             for i in ti.static(range(3)):
+#                 V[i, 2] *= -1
+#             sig[2, 2] = -sig[2, 2]
+#         return U, sig, V
+#
+#     @ti.kernel
+#     def explicit_time_integral(self):
+#         for vert in self.mesh.verts:
+#             vert.v += self.dt * vert.f / self.m[vert.id] * 0.0000125
+#             vert.x += vert.v * self.dt
+#
+#     @ti.kernel
+#     def boundary_condition(self):
+#         bounds = ti.Vector([1.0, 0.1, 1.0])
+#         for vert in self.mesh.verts:
+#             for i in ti.static(range(3)):
+#                 if vert.x[i] < -bounds[i]:
+#                     vert.x[i] = -bounds[i]
+#                     if vert.v[i] < 0.0:
+#                         vert.v[i] = 0.0
+#                 if vert.x[i] > bounds[i]:
+#                     vert.x[i] = bounds[i]
+#                     if vert.v[i] > 0.0:
+#                         vert.v[i] = 0.0
+#
+#     def substep(self, step):
+#         for i in range(step):
+#             self.fem_get_force()
+#             self.explicit_time_integral()
+#             self.boundary_condition()
