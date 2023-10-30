@@ -13,7 +13,7 @@ class dcd:
         self.faces0_num = len(args[0].mesh.faces)
         self.line = ti.Vector.field(3, dtype=ti.f32, shape=2)
         self.line_dir = ti.Vector.field(3, dtype=ti.f32, shape=1)
-        self.force = ti.Vector.field(3, dtype=ti.f32, shape=())
+        self.force = ti.Vector.field(3, dtype=ti.f32, shape=1)
         self.face0_n = ti.Vector.field(3, dtype=ti.f32, shape=self.faces0_num)
         self.proxy_position = ti.Vector.field(3, dtype=ti.f32, shape=())
         self.cross_time = ti.field(ti.i32, shape=1)
@@ -56,11 +56,11 @@ class dcd:
         for vert1 in self.mesh1.verts:
             vert1.x += self.proxy_T[0]
         self.proxy_position.fill(0)
-        self.cross_time[0] = 0
 
     @ti.func
     def intersect(self, face):
         if self.cross_flag0[face.id] == 1:
+            self.cross_time[0] -= 1
             edge1 = self.mesh0.verts.x[face.edges[0].verts[1].id] - self.mesh0.verts.x[face.edges[0].verts[0].id]
             edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
             self.face0_n[face.id] = ti.math.normalize(ti.math.cross(edge1, edge2))  # 面元法向量
@@ -70,7 +70,7 @@ class dcd:
             E2 = self.mesh0.verts.x[face.verts[2].id] - self.mesh0.verts.x[face.verts[0].id]
             S1 = ti.math.cross(self.line_dir[0], E2)
             S2 = ti.math.cross(S, E1)
-            t = (S2 @ E2)/(S1 @ E1)
+            t = (S2 @ E2) / (S1 @ E1)
             self.corss_pot[0] = self.line[1] + t * self.line_dir[0]
             d0 = ti.math.distance(self.corss_pot[0], self.line[0])  # 计算代理点到线端点的距离
             self.F[face.id] = self.K * d0 + self.D * (d0 - self.pre_d0[None])
@@ -91,7 +91,7 @@ class dcd:
     def total_force(self):
         # n = self.line[1] - self.line[0]
         for face in self.mesh0.faces:
-            self.force[None] += 5 * self.F[face.id][0] * self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
+            self.force[0] += 5 * self.F[face.id][0] * self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
             # self.force[None] += 30 * self.F[face.id][0] * n  # 固定力的方向为沿针的方向
 
     @ti.func

@@ -81,7 +81,7 @@ if __name__ == '__main__':
         if gui_run:
             cd.run()
             hap.run()
-            hap.set_force(cd.force[None].x, cd.force[None].y, cd.force[None].z)
+            # hap.set_force(cd.force[0].x, cd.force[0].y, cd.force[0].z)
             model.substep(1)
 
         ggui_run(window, canvas, scene, camera)
