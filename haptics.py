@@ -59,6 +59,7 @@ class haptices:
     def set_force(x: ti.f32, y: ti.f32, z: ti.f32):
         ph.set_force(x, y, z)
 
-    def run(self):
+    def run(self, x, y, z):
         self.get_mat()
         self.model_transpose(self.mat_row)
+        self.set_force(x, y, z)

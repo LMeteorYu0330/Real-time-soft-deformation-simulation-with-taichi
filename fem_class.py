@@ -96,7 +96,7 @@ class Implicit(LoadModel):
         self.replace_alpha = replace_alpha
         self.rota_mat = ti.Matrix.field(3, 3, dtype=ti.f32, shape=1)
 
-        self.dt = 1.0 / 30
+        self.dt = 1.0
         self.gravity = ti.Vector([0.0, -9.8, 0.0])
         self.e = 7e6  # 杨氏模量
         self.nu = 0.1  # 泊松系数
@@ -207,10 +207,6 @@ class Implicit(LoadModel):
                 self.mesh.verts.f[cell.verts[i].id] += fi
                 self.mesh.verts.f[cell.verts[3].id] += -fi
 
-        for vert in self.mesh.verts:
-            decay = vert.f - vert.pf
-            vert.f -= 0.8 * decay
-
     @ti.kernel
     def fem_get_force_Kelvin(self):  # 实时力计算
         for vert in self.mesh.verts:
@@ -230,7 +226,7 @@ class Implicit(LoadModel):
             delta_epsilon = sigma - sigma_old
             # sigma_c = self.eta * delta_epsilon / self.dt
             sigma_c = self.E1 ** 2 * sigma / (self.E1 + self.E2) * (
-                        1 - ti.exp((self.E1 - self.E2) * self.dt / self.eta))
+                    1 - ti.exp((self.E1 - self.E2) * self.dt / self.eta))
             P = 2 * self.mu * (self.F[cell.id] - U @ V.transpose()) + \
                 self.la * ((U @ V.transpose()).transpose() @ self.F[cell.id] - self.I).trace() * (U @ V.transpose())
             P += sigma_c
@@ -284,7 +280,7 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_b(self):
         for vert in self.mesh.verts:
-            self.b[vert.id] = self.m[vert.id] * vert.v + self.dt * vert.f
+            self.b[vert.id] = self.dt * self.m[vert.id] * vert.v + self.dt ** 2 * vert.f
 
     @ti.kernel
     def mat_mul_sim_Co_rotated(self, ret: ti.template(), vel: ti.template()):
@@ -338,7 +334,7 @@ class Implicit(LoadModel):
                     dH = -W_c * dP @ B_c.transpose()
                     for i in ti.static(range(3)):
                         for j in ti.static(range(3)):
-                            tmp = (vel[verts[i].id][j] - vel[verts[3].id][j])
+                            tmp = (vel[verts[u].id][d] - vel[verts[3].id][d])
                             ret[verts[u].id][d] += -self.dt ** 2 * dH[j, i] * tmp
 
     @ti.kernel
@@ -397,7 +393,7 @@ class Implicit(LoadModel):
                     for i in ti.static(range(3)):
                         for j in ti.static(range(3)):
                             tmp = (vel[verts[i].id][j] - vel[verts[3].id][j])
-                            ret[verts[i].id][j] += -self.dt ** 2 * dH[u, d] * tmp
+                            ret[verts[i].id][j] += -self.dt ** 2 * dH[d, u] * tmp
 
     def cg(self, n_iter, epsilon):
         # self.mat_mul_STVK(self.mul_ans, self.mesh.verts.v)
@@ -413,7 +409,7 @@ class Implicit(LoadModel):
             # self.mat_mul_STVK(self.mul_ans, self.p0)
             # self.mat_mul_sim_Neo_Hookean(self.mul_ans, self.p0)
             self.mat_mul_sim_Co_rotated(self.mul_ans, self.p0)
-            # elf.mat_mul_Kelvin(self.mul_ans, self.p0)
+            # self.mat_mul_Kelvin(self.mul_ans, self.p0)
             dot_ans = self.dot(self.p0, self.mul_ans)
             alpha = r_2_new / (dot_ans + epsilon)
             self.add(self.mesh.verts.v, self.mesh.verts.v, alpha, self.p0)
@@ -464,9 +460,16 @@ class Implicit(LoadModel):
         #             vert.v[i] = 0
         self.mesh.verts.fe.fill(0)
 
+    @ti.kernel
+    def Viscoelasticity(self):
+        for vert in self.mesh.verts:
+            decay = vert.f - vert.pf
+            vert.f -= 0.85 * decay
+
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
+            self.Viscoelasticity()
             # self.fem_get_force_Kelvin()
             # self.fem_get_force_STVK()
             # self.fem_get_force_Neo_Hookean()
