@@ -223,7 +223,7 @@ class Implicit(LoadModel):
             U, sig, V = self.ssvd(self.F[cell.id])
             sigma = 1 / 2 * (self.F[cell.id].transpose() @ self.F[cell.id] - self.I)
             sigma_old = 1 / 2 * (self.F_old[cell.id].transpose() @ self.F_old[cell.id] - self.I)
-            delta_epsilon = sigma - sigma_old
+            # delta_epsilon = sigma - sigma_old
             # sigma_c = self.eta * delta_epsilon / self.dt
             sigma_c = self.E1 ** 2 * sigma / (self.E1 + self.E2) * (
                     1 - ti.exp((self.E1 - self.E2) * self.dt / self.eta))
@@ -464,7 +464,7 @@ class Implicit(LoadModel):
     def Viscoelasticity(self):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf
-            vert.f -= 0.85 * decay
+            vert.f -= 0.8 * decay
 
     def substep(self, step):
         for i in range(step):
