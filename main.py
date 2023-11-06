@@ -2,7 +2,7 @@ import taichi as ti
 import fem_class as fem
 import collide_detection as cd
 import haptics as ha
-import pyhaptics as ph
+import pyhaptics3 as ph
 import DCD
 def ggui_init():
     window = ti.ui.Window("FEM", (768, 768), vsync=False)
@@ -47,7 +47,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    ph.init('Default Device')
+    ph.init(2)
     window, canvas, scene, camera = ggui_init()
     force_vis = ti.Vector.field(3, dtype=ti.f32, shape=2)
 

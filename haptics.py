@@ -1,4 +1,4 @@
-import pyhaptics as ph
+import pyhaptics3 as ph
 import taichi as ti
 import numpy as np
 
