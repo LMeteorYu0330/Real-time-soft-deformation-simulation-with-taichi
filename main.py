@@ -24,7 +24,7 @@ def ggui_run(window, canvas, scene, camera):
 
     scene.mesh_instance(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
-
+    # scene.mesh(equipment_model1.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
     # scene.lines(cd.line, width=1, color=(0, 0, 0))
     # scene.particles(bvt_equipment.face_barycenter, 0.0008, (0.9, 0.9, 0.9))
     # scene.lines(bvt_obj.min_box_for_draw, width=1, color=(0, 0, 0))
@@ -58,9 +58,9 @@ if __name__ == '__main__':
     model = fem.Implicit(obj1, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi)
     # model = fem.Implicit(obj2, v_norm=1)
     equipment_model = fem.LoadModel(equipment, v_norm=1e-3)
-
+    # equipment_model1 = fem.LoadModel(equipment, v_norm=1e-3)
     hap = ha.haptices(equipment_model.mesh.verts, 0, 1 / 2 * ti.math.pi)
-
+    # hap1 = ha.haptices1(equipment_model1.mesh.verts, 0, 1 / 2 * ti.math.pi)
     cd = DCD.dcd(model, equipment_model)
 
     gui_run = True
@@ -80,6 +80,7 @@ if __name__ == '__main__':
         if gui_run:
             cd.run()
             hap.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
+            # hap1.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
             model.substep(1)
 
         ggui_run(window, canvas, scene, camera)
