@@ -188,7 +188,9 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_force_sim_Co_rotated(self):  # 实时力计算
         for vert in self.mesh.verts:
-            vert.f = self.gravity * self.m[vert.id] + vert.fe
+            if 1:
+                vert.fe += self.gravity * self.m[vert.id]
+            vert.f = vert.fe
             vert.pf = vert.f
             # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
             #     print(vert.fe)

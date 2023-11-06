@@ -10,7 +10,6 @@ def ggui_init():
     canvas.set_background_color(color=(1, 1, 1))
     scene = ti.ui.Scene()
     camera = ti.ui.Camera()
-    camera.up(0, 1, 0)
     camera.position(0.0, 0.0, 0.35)
     camera.lookat(0.0, 0.0, 0.0)
     camera.fov(60)
