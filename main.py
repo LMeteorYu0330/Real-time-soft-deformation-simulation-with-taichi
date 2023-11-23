@@ -1,3 +1,4 @@
+import numpy as np
 import taichi as ti
 import fem_class as fem
 import collide_detection as cd
@@ -47,15 +48,15 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    ph.init(2)
+    ph.init(1)
     window, canvas, scene, camera = ggui_init()
     force_vis = ti.Vector.field(3, dtype=ti.f32, shape=2)
 
-    obj1 = "model/liver_houdini/liver.node"
-    obj2 = "model/liver/liver0.node"
+    obj = "model/liver_houdini/liver.node"
+    # obj1 = "model/liver/liver0.node"
     equipment = "model/equipment/zhen.obj"
 
-    model = fem.Implicit(obj1, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi)
+    model = fem.Implicit(obj, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi)
     # model = fem.Implicit(obj2, v_norm=1)
     equipment_model = fem.LoadModel(equipment, v_norm=1e-3)
     # equipment_model1 = fem.LoadModel(equipment, v_norm=1e-3)
@@ -82,5 +83,6 @@ if __name__ == '__main__':
             hap.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
             # hap1.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
             model.substep(1)
-
         ggui_run(window, canvas, scene, camera)
+
+# np.savetxt("analysis/force.txt", cd.force_list)

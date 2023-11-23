@@ -1,6 +1,6 @@
 import taichi as ti
 import fem_class as fem
-
+import numpy as np
 
 @ti.data_oriented
 class dcd:
@@ -27,6 +27,8 @@ class dcd:
         self.pre_d0 = ti.Vector.field(1, dtype=ti.f32, shape=())
 
         self.corss_pot = ti.Vector.field(3, dtype=ti.f32, shape=1)
+
+        self.force_list = []
 
     line_type = ti.types.ndarray(dtype=ti.i32, ndim=1)
 
@@ -137,9 +139,15 @@ class dcd:
         res = a[0] * b[4] + a[1] * b[5] + a[2] * b[3] + a[3] * b[2] + a[4] * b[0] + a[5] * b[1]
         return res
 
+    def force_print(self):
+        force = self.force[0].to_numpy()
+        # if np.linalg.norm(force) > 0:
+        self.force_list.append(force)
+
     def run(self):
         self.detect(self.obj1.line0, self.obj1.line1)
         self.proxy()
+        # self.force_print()
 
 
 if __name__ == '__main__':
