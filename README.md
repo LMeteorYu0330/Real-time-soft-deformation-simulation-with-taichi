@@ -2,6 +2,8 @@
 ## 使用方法
 * 安装环境
 ```
+pip install numpy
+pip install matplotlib # 用于分析反馈力
 pip install taichi==1.4.1
 python3 -m pip install -U taichi meshtaichi_patcher
 ```
