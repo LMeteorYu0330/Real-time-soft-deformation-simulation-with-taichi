@@ -22,9 +22,8 @@ python3 -m pip install -U taichi meshtaichi_patcher
 碰撞响应算法十分基础，有待改进
 
 ## 后续计划
-* 1、加入手术场景
-* 2、更新本构模型、数值求解器和力响应模型
-* 3、完善readme
+* 1、完善反馈力
+* 2、加入手术场景
 
 ## 注意
 * 1、环境问题：python3.8+taichi1.4.1版本运行最佳，在新版本的taichi环境中运行会掉帧，原因不明，其他python版本未测试
