@@ -2,8 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 force = np.loadtxt("force.txt")
-# force = force[700:800]
-force_scalar = np.linalg.norm(force, axis=1)
-plt.plot(force_scalar)
+d = np.loadtxt("d.txt") * 10
+force = np.linalg.norm(force, axis=1)
+result = np.vstack((force, d))
+result = result[:, 1250:-1]
+plt.plot(result[1], ".:", label='x')
+plt.plot(result[0], ":", label='f')
+plt.legend(fontsize=15)
 plt.show()
-

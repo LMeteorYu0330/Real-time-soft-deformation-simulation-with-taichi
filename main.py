@@ -80,9 +80,11 @@ if __name__ == '__main__':
 
         if gui_run:
             cd.run()
-            hap.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
+            # hap.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
+            hap.run(0, 0, 0)
             # hap1.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
             model.substep(1)
         ggui_run(window, canvas, scene, camera)
 
-# np.savetxt("analysis/force.txt", cd.force_list)
+np.savetxt("analysis/force.txt", cd.force_list)
+np.savetxt("analysis/d.txt", cd.d_list)

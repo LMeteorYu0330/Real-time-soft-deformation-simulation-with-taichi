@@ -2,6 +2,7 @@ import taichi as ti
 import fem_class as fem
 import numpy as np
 
+
 @ti.data_oriented
 class dcd:
     def __init__(self, *args):
@@ -23,12 +24,13 @@ class dcd:
 
         self.F = ti.Vector.field(1, dtype=ti.f32, shape=self.faces0_num)
         self.K = 0.5
-        self.D = 1.5
+        self.D = 0.5
         self.pre_d0 = ti.Vector.field(1, dtype=ti.f32, shape=())
 
         self.corss_pot = ti.Vector.field(3, dtype=ti.f32, shape=1)
 
         self.force_list = []
+        self.d_list = []
 
     line_type = ti.types.ndarray(dtype=ti.i32, ndim=1)
 
@@ -75,7 +77,7 @@ class dcd:
             t = (S2 @ E2) / (S1 @ E1)
             self.corss_pot[0] = self.line[1] + t * self.line_dir[0]
             d0 = ti.math.distance(self.corss_pot[0], self.line[0])  # 计算代理点到线端点的距离
-            self.F[face.id] = self.K * d0 + self.D * (d0 - self.pre_d0[None])
+            self.F[face.id][0] = self.K * d0 + self.D * (d0 - self.pre_d0[None][0])
             # 用距离和方向给顶点力
             self.mesh0.verts.fe[face.verts[0].id] += -9000 * self.F[face.id][0] * self.face0_n[face.id]
             self.mesh0.verts.fe[face.verts[1].id] += -9000 * self.F[face.id][0] * self.face0_n[face.id]
@@ -91,9 +93,10 @@ class dcd:
 
     @ti.func
     def total_force(self):
-        # n = self.line[1] - self.line[0]
+        n = self.line[1] - self.line[0]
+        n = ti.math.normalize(n)
         for face in self.mesh0.faces:
-            self.force[0] += 5 * self.F[face.id][0] * self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
+            self.force[0] += 5 * self.F[face.id][0] * n  # self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
             # self.force[None] += 30 * self.F[face.id][0] * n  # 固定力的方向为沿针的方向
 
     @ti.func
@@ -141,13 +144,15 @@ class dcd:
 
     def force_print(self):
         force = self.force[0].to_numpy()
+        d = self.pre_d0[None].to_numpy()
         # if np.linalg.norm(force) > 0:
+        self.d_list.append(d)
         self.force_list.append(force)
 
     def run(self):
         self.detect(self.obj1.line0, self.obj1.line1)
         self.proxy()
-        # self.force_print()
+        self.force_print()
 
 
 if __name__ == '__main__':
