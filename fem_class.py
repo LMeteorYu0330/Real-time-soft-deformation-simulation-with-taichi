@@ -191,7 +191,7 @@ class Implicit(LoadModel):
             if 1:
                 vert.fe += self.gravity * self.m[vert.id]
             vert.f = vert.fe
-            vert.pf = vert.f
+            vert.pf = vert.f  # pf是外力
             # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
             #     print(vert.fe)
         for cell in self.mesh.cells:
@@ -465,8 +465,8 @@ class Implicit(LoadModel):
     @ti.kernel
     def Viscoelasticity(self):
         for vert in self.mesh.verts:
-            decay = vert.f - vert.pf
-            vert.f -= 0.8 * decay
+            decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
+            vert.f -= 0.7 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
 
     def substep(self, step):
         for i in range(step):
