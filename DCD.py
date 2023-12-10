@@ -23,10 +23,10 @@ class dcd:
         self.proxy_T = ti.Vector.field(3, dtype=ti.f32, shape=1)
 
         self.F = ti.Vector.field(1, dtype=ti.f32, shape=self.faces0_num)
-        self.K = 0.5
-        self.D = 0.5
+        self.K = 0.9
+        self.D = 0.1
         self.pre_d0 = ti.Vector.field(1, dtype=ti.f32, shape=())
-
+        self.pre_f = ti.Vector.field(3, dtype=ti.f32, shape=1)
         self.corss_pot = ti.Vector.field(3, dtype=ti.f32, shape=1)
 
         self.force_list = []
@@ -93,11 +93,11 @@ class dcd:
 
     @ti.func
     def total_force(self):
-        n = self.line[1] - self.line[0]
-        n = ti.math.normalize(n)
+        # n = self.line[1] - self.line[0]
+        # n = ti.math.normalize(n)
         for face in self.mesh0.faces:
-            self.force[0] += 5 * self.F[face.id][0] * n  # self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
-            # self.force[None] += 30 * self.F[face.id][0] * n  # 固定力的方向为沿针的方向
+            self.force[0] += self.F[face.id][0] * self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
+        self.force[0] *= 3
 
     @ti.func
     def line_tri_detect(self, face0, lmin, lmax):
@@ -152,7 +152,7 @@ class dcd:
     def run(self):
         self.detect(self.obj1.line0, self.obj1.line1)
         self.proxy()
-        self.force_print()
+        # self.force_print()
 
 
 if __name__ == '__main__':
