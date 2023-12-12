@@ -20,6 +20,7 @@ class dcd:
         self.cross_time = ti.field(ti.i32, shape=1)
         self.cross_time[0] = 0
         self.cross_flag0 = ti.field(ti.i32, shape=self.faces0_num)
+        self.detect_flag0 = ti.field(ti.i32, shape=1)
         self.proxy_T = ti.Vector.field(3, dtype=ti.f32, shape=1)
 
         self.F = ti.Vector.field(1, dtype=ti.f32, shape=self.faces0_num)
@@ -43,9 +44,9 @@ class dcd:
         self.F.fill(0)
         self.face0_n.fill(0)
         for face0 in self.mesh0.faces:
-            # if face0.cells.size == 1:
-            # if True:
-            self.line_tri_detect(face0, self.line[0], self.line[1])
+            if face0.cells.size == 1:
+                # if True:
+                self.line_tri_detect(face0, self.line[0], self.line[1])
         for face0 in self.mesh0.faces:
             self.intersect(face0)
         self.total_force()
@@ -59,15 +60,16 @@ class dcd:
             self.proxy_T[0] = [0, 0, 0]
         for vert1 in self.mesh1.verts:
             vert1.x += self.proxy_T[0]
+
         self.proxy_position.fill(0)
 
     @ti.func
     def intersect(self, face):
-        if self.cross_flag0[face.id] == 1:
+        if self.cross_flag0[face.id] != 0:
             self.cross_time[0] -= 1
             edge1 = self.mesh0.verts.x[face.edges[0].verts[1].id] - self.mesh0.verts.x[face.edges[0].verts[0].id]
             edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
-            self.face0_n[face.id] = ti.math.normalize(ti.math.cross(edge1, edge2))  # 面元法向量
+            self.face0_n[face.id] = ti.math.normalize(ti.math.cross(edge1, edge2)) * self.cross_flag0[face.id]  # 面元法向量
             # 求线段和三角面的交点
             S = self.line[1] - self.mesh0.verts.x[face.verts[0].id]
             E1 = self.mesh0.verts.x[face.verts[1].id] - self.mesh0.verts.x[face.verts[0].id]
@@ -97,6 +99,8 @@ class dcd:
         # n = ti.math.normalize(n)
         for face in self.mesh0.faces:
             self.force[0] += self.F[face.id][0] * self.face0_n[face.id]  # 用速度的相反量给力反馈作用力
+            # if face.cells.size == 1 and self.F[face.id][0] > 0.02:
+            #     self.detect_flag0[0] = 1
         self.force[0] *= 3
 
     @ti.func
@@ -117,6 +121,9 @@ class dcd:
             l2 = self.plucker(lmax, v0)
             ss1 = self.sideOp(e2, l3)
             ss2 = self.sideOp(e2, l2)
+            if ss1 < 0 and ss2 < 0:
+                self.cross_flag0[face0.id] = -1
+                self.cross_time[0] += 1
             if ss1 > 0 and ss2 > 0:
                 self.cross_flag0[face0.id] = 1
                 self.cross_time[0] += 1
@@ -150,9 +157,10 @@ class dcd:
         self.force_list.append(force)
 
     def run(self):
-        self.detect(self.obj1.line0, self.obj1.line1)
+        if self.detect_flag0[0] == 0:
+            self.detect(self.obj1.line0, self.obj1.line1)
         self.proxy()
-        # self.force_print()
+        self.force_print()
 
 
 if __name__ == '__main__':

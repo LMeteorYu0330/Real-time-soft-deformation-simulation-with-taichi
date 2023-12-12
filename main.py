@@ -36,7 +36,6 @@ def ggui_run(window, canvas, scene, camera):
     # scene.lines(bvt_equipment.layer0_box_for_draw, width=1, color=(0, 0, 0))
     # scene.particles(cd.corss_pot, 0.008, (0.9, 0.9, 0.9))
     # scene.particles(cd.line, 0.008, (0.9, 0.9, 0.9))
-
     # force_vis[0] = cd.line[0]
     # force_vis[1] = cd.line[0] + cd.force[None]
     # if cd.force[None].x + cd.force[None].y + cd.force[None].z != 0:
@@ -86,5 +85,5 @@ if __name__ == '__main__':
             model.substep(1)
         ggui_run(window, canvas, scene, camera)
 
-# np.savetxt("analysis/force.txt", cd.force_list)
-# np.savetxt("analysis/d.txt", cd.d_list)
+np.savetxt("analysis/force.txt", cd.force_list)
+np.savetxt("analysis/d.txt", cd.d_list)
