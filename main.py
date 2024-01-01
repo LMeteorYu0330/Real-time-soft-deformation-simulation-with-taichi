@@ -87,3 +87,4 @@ if __name__ == '__main__':
 
 np.savetxt("analysis/force.txt", cd.force_list)
 np.savetxt("analysis/d.txt", cd.d_list)
+np.savetxt("analysis/de.txt", model.de_list)

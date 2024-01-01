@@ -91,6 +91,7 @@ class LoadModel:
 class Implicit(LoadModel):
     def __init__(self, filename, v_norm=1, replace_direction=0, replace_alpha=0):
         super().__init__(filename)
+        self.de_list = []
         self.v_norm = v_norm
         self.replace_direction = replace_direction
         self.replace_alpha = replace_alpha
@@ -282,7 +283,7 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_b(self):
         for vert in self.mesh.verts:
-            self.b[vert.id] = self.dt * self.m[vert.id] * vert.v + self.dt ** 2 * vert.f
+            self.b[vert.id] = self.m[vert.id] * vert.v + self.dt * vert.f
 
     @ti.kernel
     def mat_mul_sim_Co_rotated(self, ret: ti.template(), vel: ti.template()):
@@ -466,12 +467,17 @@ class Implicit(LoadModel):
     def Viscoelasticity(self):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
-            vert.f -= 0.7 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+            vert.f -= 0.9 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+
+    def call_F(self):
+        de = self.F.to_numpy()
+        de_sum = np.sum(de) / len(de)
+        self.de_list.append(de_sum)
 
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
-            self.Viscoelasticity()
+            # self.Viscoelasticity()
             # self.fem_get_force_Kelvin()
             # self.fem_get_force_STVK()
             # self.fem_get_force_Neo_Hookean()
@@ -479,6 +485,7 @@ class Implicit(LoadModel):
             self.cg(5, 1e-5)
             self.boundary_condition()
             self.decay()
+            self.call_F()
 
     @ti.func
     def ssvd(self, fai):
