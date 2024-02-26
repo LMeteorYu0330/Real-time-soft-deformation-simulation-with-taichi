@@ -189,8 +189,7 @@ class Implicit(LoadModel):
     @ti.kernel
     def fem_get_force_sim_Co_rotated(self):  # 实时力计算
         for vert in self.mesh.verts:
-            if 1:
-                vert.fe += self.gravity * self.m[vert.id]
+            vert.fe += self.gravity * self.m[vert.id]
             vert.f = vert.fe
             vert.pf = vert.f  # pf是外力
             # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
@@ -467,7 +466,7 @@ class Implicit(LoadModel):
     def Viscoelasticity(self):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
-            vert.f -= 0.9 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+            vert.f -= 0.8 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
 
     def call_F(self):
         de = self.F.to_numpy()
@@ -477,7 +476,7 @@ class Implicit(LoadModel):
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
-            # self.Viscoelasticity()
+            self.Viscoelasticity()
             # self.fem_get_force_Kelvin()
             # self.fem_get_force_STVK()
             # self.fem_get_force_Neo_Hookean()

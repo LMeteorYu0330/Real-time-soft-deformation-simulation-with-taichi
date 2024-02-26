@@ -85,6 +85,6 @@ if __name__ == '__main__':
             model.substep(1)
         ggui_run(window, canvas, scene, camera)
 
-np.savetxt("analysis/force.txt", cd.force_list)
-np.savetxt("analysis/d.txt", cd.d_list)
-np.savetxt("analysis/de.txt", model.de_list)
+# np.savetxt("analysis/force.txt", cd.force_list)
+# np.savetxt("analysis/d.txt", cd.d_list)
+# np.savetxt("analysis/de.txt", model.de_list)
