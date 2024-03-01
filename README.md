@@ -1,4 +1,4 @@
-# 基于taichi和FEM的实时虚拟手术交互仿真
+# 基于taichi和FEM的实时软体交互仿真
 ## 使用方法
 * 安装环境
 ```
@@ -11,6 +11,7 @@ python3 -m pip install -U taichi meshtaichi_patcher
 * 直接运行main.py
 ## 基于python-taichi的隐式有限元弹性器官仿真
 * 参考taichi example中的implicit fem的算法
+* 加入了粘弹性效果
 * 弹性器官有限元仿真
 * 加入力反馈设备交互
 * 使用虚位代理算法解决穿模问题
