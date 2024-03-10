@@ -467,6 +467,14 @@ class Implicit(LoadModel):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
             vert.f -= 0.8 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+        # E1 = 0.1
+        # E2 = 0.1
+        # N = 0.9
+        # for vert in self.mesh.verts:
+        #     f = vert.f - vert.pf
+        #     decay = E1*f + E1**2*f/(E1+E2)*(1-ti.exp(-(E1+E2)*self.dt/N))
+        #     print(decay)
+        #     vert.f -= decay
 
     def call_F(self):
         de = self.F.to_numpy()

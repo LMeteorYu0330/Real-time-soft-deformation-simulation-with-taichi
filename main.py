@@ -47,7 +47,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    ph.init(1)
+    # ph.init(1)
     window, canvas, scene, camera = ggui_init()
     force_vis = ti.Vector.field(3, dtype=ti.f32, shape=2)
 
@@ -76,6 +76,12 @@ if __name__ == '__main__':
             #     gui_run = not gui_run
             if window.event.key == ti.ui.ESCAPE:
                 break
+        if window.is_pressed('f'):
+            cd.give_force[0] = 0
+            print(cd.give_force[0])
+        else:
+            cd.give_force[0] = 1
+
 
         if gui_run:
             cd.run()
@@ -85,6 +91,6 @@ if __name__ == '__main__':
             model.substep(1)
         ggui_run(window, canvas, scene, camera)
 
-# np.savetxt("analysis/force.txt", cd.force_list)
-# np.savetxt("analysis/d.txt", cd.d_list)
-# np.savetxt("analysis/de.txt", model.de_list)
+np.savetxt("analysis/force.txt", cd.force_list)
+np.savetxt("analysis/d.txt", cd.d_list)
+np.savetxt("analysis/de.txt", model.de_list)

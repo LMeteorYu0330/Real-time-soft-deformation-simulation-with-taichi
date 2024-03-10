@@ -22,6 +22,8 @@ class dcd:
         self.cross_flag0 = ti.field(ti.i32, shape=self.faces0_num)
         self.detect_flag0 = ti.field(ti.i32, shape=1)
         self.proxy_T = ti.Vector.field(3, dtype=ti.f32, shape=1)
+        self.give_force = ti.field(ti.i32, shape=1)
+        self.give_force[0] = 1
 
         self.F = ti.Vector.field(1, dtype=ti.f32, shape=self.faces0_num)
         self.K = 0.9
@@ -37,8 +39,18 @@ class dcd:
 
     @ti.kernel
     def detect(self, lmin: line_type, lmax: line_type):
-        self.line[0] = self.mesh1.verts.rx[lmin[0]]
-        self.line[1] = self.mesh1.verts.rx[lmax[0]]
+        for face in self.mesh0.faces:
+            if face.id == 10 and self.give_force[0] == 0:
+                edge1 = self.mesh0.verts.x[face.edges[0].verts[1].id] - self.mesh0.verts.x[face.edges[0].verts[0].id]
+                edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
+                n = ti.math.normalize(ti.math.cross(edge1, edge2))
+                self.line[0] = self.mesh0.verts.x[face.edges[0].verts[1].id] + 0.02 * n
+                self.line[1] = self.mesh0.verts.x[face.edges[0].verts[1].id] - 0.01 * n
+            elif face.id != 10 and self.give_force[0] == 0:
+                pass
+            elif self.give_force[0] == 1:
+                self.line[0] = self.mesh1.verts.rx[lmin[0]]
+                self.line[1] = self.mesh1.verts.rx[lmax[0]]
         self.line_dir[0] = ti.math.normalize(self.line[0] - self.line[1])
         self.force.fill(0)
         self.F.fill(0)
@@ -47,6 +59,8 @@ class dcd:
             # if face0.cells.size == 1:
             if True:
                 self.line_tri_detect(face0, self.line[0], self.line[1])
+        if self.cross_time[0] == 0:
+            self.pre_d0[None][0] = 0
         for face0 in self.mesh0.faces:
             self.intersect(face0)
         self.total_force()
@@ -160,7 +174,7 @@ class dcd:
         if self.detect_flag0[0] == 0:
             self.detect(self.obj1.line0, self.obj1.line1)
         self.proxy()
-        # self.force_print()
+        self.force_print()
 
 
 if __name__ == '__main__':
