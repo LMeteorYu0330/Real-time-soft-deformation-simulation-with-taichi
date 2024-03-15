@@ -20,10 +20,12 @@ class LoadModel:
                 'pf': ti.math.vec3,
                 'f': ti.math.vec3,
                 'fe': ti.math.vec3,
-                'ox': ti.math.vec3
+                'ox': ti.math.vec3,
+                'gx': ti.math.vec3
             })
             self.mesh.verts.x.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.ox.from_numpy(self.mesh.get_position_as_numpy())
+            self.mesh.verts.gx.from_numpy(self.mesh.get_position_as_numpy())
             self.mesh.verts.v.fill(0.0)
             self.mesh.verts.pf.fill(0.0)
             self.mesh.verts.f.fill(0.0)
@@ -117,6 +119,8 @@ class Implicit(LoadModel):
         self.F = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
         self.F_old = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
         self.E = ti.Matrix.field(3, 3, ti.f32, shape=self.cell_num)
+        self.give_shape = ti.field(ti.i32, shape=1)
+        self.give_shape[0] = -1
 
         self.b = ti.Vector.field(3, dtype=ti.f32, shape=self.vert_num)
         self.r0 = ti.Vector.field(3, dtype=ti.f32, shape=self.vert_num)
@@ -150,6 +154,7 @@ class Implicit(LoadModel):
             for vert in self.mesh.verts:
                 vert.x *= 1000 / self.V[None] * self.v_norm
                 vert.ox *= 1000 / self.V[None] * self.v_norm
+                vert.gx *= 1000 / self.V[None] * self.v_norm
 
     @ti.kernel
     def replace(self, direction: ti.i32, alpha: ti.f32):
@@ -191,7 +196,7 @@ class Implicit(LoadModel):
         for vert in self.mesh.verts:
             vert.fe += self.gravity * self.m[vert.id]
             vert.f = vert.fe
-            vert.pf = vert.f  # pf是外力
+            vert.pf = vert.fe  # pf是外力
             # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
             #     print(vert.fe)
         for cell in self.mesh.cells:
@@ -438,7 +443,15 @@ class Implicit(LoadModel):
 
     @ti.kernel
     def boundary_condition(self):
+        for vert in self.mesh.verts:
+            if self.give_shape[0] == 1:
+                vert.x = vert.gx
+            else:
+                vert.gx = vert.x
+
         bounds = ti.Vector([0.2, 0.1, 0.2])
+        # if self.give_shape[0] == 1:
+        #     bounds = ti.Vector([0.07, 0.1, 0.2])
         for vert in self.mesh.verts:
             for i in ti.static(range(3)):
                 if vert.x[i] < -bounds[i]:
@@ -478,7 +491,9 @@ class Implicit(LoadModel):
 
     def call_F(self):
         de = self.F.to_numpy()
+        fi = self.mesh.verts.f.to_numpy()
         de_sum = np.sum(de) / len(de)
+        de_sum = np.sum(fi) / len(fi)
         self.de_list.append(de_sum)
 
     def substep(self, step):

@@ -23,7 +23,7 @@ class dcd:
         self.detect_flag0 = ti.field(ti.i32, shape=1)
         self.proxy_T = ti.Vector.field(3, dtype=ti.f32, shape=1)
         self.give_force = ti.field(ti.i32, shape=1)
-        self.give_force[0] = 1
+        self.give_force[0] = -1
 
         self.F = ti.Vector.field(1, dtype=ti.f32, shape=self.faces0_num)
         self.K = 0.9
@@ -40,15 +40,15 @@ class dcd:
     @ti.kernel
     def detect(self, lmin: line_type, lmax: line_type):
         for face in self.mesh0.faces:
-            if face.id == 10 and self.give_force[0] == 0:
+            if face.id == 10 and self.give_force[0] == 1:
                 edge1 = self.mesh0.verts.x[face.edges[0].verts[1].id] - self.mesh0.verts.x[face.edges[0].verts[0].id]
                 edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
                 n = ti.math.normalize(ti.math.cross(edge1, edge2))
                 self.line[0] = self.mesh0.verts.x[face.edges[0].verts[1].id] + 0.02 * n
                 self.line[1] = self.mesh0.verts.x[face.edges[0].verts[1].id] - 0.01 * n
-            elif face.id != 10 and self.give_force[0] == 0:
+            elif face.id != 10 and self.give_force[0] == 1:
                 pass
-            elif self.give_force[0] == 1:
+            elif self.give_force[0] == -1:
                 self.line[0] = self.mesh1.verts.rx[lmin[0]]
                 self.line[1] = self.mesh1.verts.rx[lmax[0]]
         self.line_dir[0] = ti.math.normalize(self.line[0] - self.line[1])

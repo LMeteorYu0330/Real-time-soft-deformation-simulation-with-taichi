@@ -76,12 +76,10 @@ if __name__ == '__main__':
             #     gui_run = not gui_run
             if window.event.key == ti.ui.ESCAPE:
                 break
-        if window.is_pressed('f'):
-            cd.give_force[0] = 0
-            print(cd.give_force[0])
-        else:
-            cd.give_force[0] = 1
-
+            if window.event.key == 'f':
+                cd.give_force[0] *= -1
+            if window.event.key == 'g':
+                model.give_shape[0] *= -1
 
         if gui_run:
             cd.run()
