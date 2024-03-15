@@ -444,11 +444,11 @@ class Implicit(LoadModel):
     @ti.kernel
     def boundary_condition(self):
         for vert in self.mesh.verts:
-            if self.give_shape[0] == 1:
+            if self.give_shape[0] == 1 and vert.id == 2610:
                 vert.x = vert.gx
-            else:
-                vert.gx = vert.x
 
+            elif self.give_shape[0] == -1:
+                vert.gx = vert.x
         bounds = ti.Vector([0.2, 0.1, 0.2])
         # if self.give_shape[0] == 1:
         #     bounds = ti.Vector([0.07, 0.1, 0.2])
@@ -480,6 +480,12 @@ class Implicit(LoadModel):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
             vert.f -= 0.8 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+        for cell in self.mesh.cells:
+            for i in range(3):
+                self.mesh.verts.f[cell.verts[0].id][i] -= 0.1 * self.F[cell.id][0, i]
+                self.mesh.verts.f[cell.verts[1].id][i] -= 0.1 * self.F[cell.id][1, i]
+                self.mesh.verts.f[cell.verts[2].id][i] -= 0.1 * self.F[cell.id][2, i]
+                self.mesh.verts.f[cell.verts[3].id][i] += 0.1 * (self.F[cell.id][2, i] + self.F[cell.id][1, i] + self.F[cell.id][0, i])
         # E1 = 0.1
         # E2 = 0.1
         # N = 0.9
@@ -491,10 +497,10 @@ class Implicit(LoadModel):
 
     def call_F(self):
         de = self.F.to_numpy()
-        fi = self.mesh.verts.f.to_numpy()
-        de_sum = np.sum(de) / len(de)
+        fi = self.mesh.verts.f.to_numpy()[2610]
+        # de_sum = np.sum(de) / len(de)
         de_sum = np.sum(fi) / len(fi)
-        self.de_list.append(de_sum)
+        self.de_list.append(fi)
 
     def substep(self, step):
         for i in range(step):
