@@ -45,12 +45,14 @@ class dcd:
                 edge2 = self.mesh0.verts.x[face.edges[1].verts[1].id] - self.mesh0.verts.x[face.edges[1].verts[0].id]
                 n = ti.math.normalize(ti.math.cross(edge1, edge2))
                 self.line[0] = self.mesh0.verts.x[face.edges[0].verts[1].id] + 0.02 * n
-                self.line[1] = self.mesh0.verts.x[face.edges[0].verts[1].id] - 0.01 * n
+                self.line[1] = self.mesh0.verts.x[face.edges[0].verts[1].id] - 0.03 * n
             elif face.id != 10 and self.give_force[0] == 1:
                 pass
             elif self.give_force[0] == -1:
                 self.line[0] = self.mesh1.verts.rx[lmin[0]]
                 self.line[1] = self.mesh1.verts.rx[lmax[0]]
+        # self.line[0] = self.mesh1.verts.rx[lmin[0]]
+        # self.line[1] = self.mesh1.verts.rx[lmax[0]]
         self.line_dir[0] = ti.math.normalize(self.line[0] - self.line[1])
         self.force.fill(0)
         self.F.fill(0)

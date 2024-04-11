@@ -11,8 +11,8 @@ def ggui_init():
     canvas.set_background_color(color=(1, 1, 1))
     scene = ti.ui.Scene()
     camera = ti.ui.Camera()
-    camera.position(0.0, 0.0, 0.35)
-    camera.lookat(0.0, 0.0, 0.0)
+    camera.position(-0.06839289, 0.27995652, -0.11273427)
+    camera.lookat(-0.06953721, -0.71992012, -0.12839985)
     camera.fov(60)
 
     return window, canvas, scene, camera
@@ -23,8 +23,10 @@ def ggui_run(window, canvas, scene, camera):
     scene.ambient_light((0.5, 0.5, 0.5))
     scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
 
-    scene.mesh_instance(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
+    scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
+    scene.mesh(body_model.mesh.verts.x, body_model.indices, color=(0.9, 0.85, 0.8), show_wireframe=True)
+
     # scene.mesh(equipment_model1.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
     # scene.lines(cd.line, width=1, color=(0, 0, 0))
     # scene.particles(bvt_equipment.face_barycenter, 0.0008, (0.9, 0.9, 0.9))
@@ -54,10 +56,12 @@ if __name__ == '__main__':
     obj = "model/liver_houdini/liver.node"
     # obj1 = "model/liver/liver0.node"
     equipment = "model/equipment/zhen.obj"
-
-    model = fem.Implicit(obj, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi)
+    body = "model/body.obj"
+    model = fem.Implicit(obj, v_norm=5e-3, replace_direction=0, replace_alpha=ti.math.pi/2)
+    model.replace(1, ti.math.pi/4, bias = [0.01, -0.19, -0.11])
     # model = fem.Implicit(obj2, v_norm=1)
     equipment_model = fem.LoadModel(equipment, v_norm=1e-3)
+    body_model = fem.LoadModel(body, v_norm=1e-3)
     # equipment_model1 = fem.LoadModel(equipment, v_norm=1e-3)
     hap = ha.haptices(equipment_model.mesh.verts, 0, 1 / 2 * ti.math.pi)
     # hap1 = ha.haptices1(equipment_model1.mesh.verts, 0, 1 / 2 * ti.math.pi)
@@ -65,8 +69,10 @@ if __name__ == '__main__':
 
     gui_run = True
     while window.running:
-        # if window.is_pressed('r'):
-        #     model.reset()
+        if window.is_pressed('r'):
+            model.reset()
+        if window.is_pressed('v'):
+            print(camera.curr_position, camera.curr_lookat)
         # if window.is_pressed('t'):
         #     print("x:", model.mesh.verts.x)
         #     print("v:", model.mesh.verts.v)
@@ -89,7 +95,7 @@ if __name__ == '__main__':
             model.substep(1)
         ggui_run(window, canvas, scene, camera)
 
-np.savetxt("analysis/force.txt", cd.force_list)
-np.savetxt("analysis/d.txt", cd.d_list)
-np.savetxt("analysis/de.txt", model.de_list)
-np.savetxt("analysis/fi.txt", model.fi_list)
+# np.savetxt("analysis/force.txt", cd.force_list)
+# np.savetxt("analysis/d.txt", cd.d_list)
+# np.savetxt("analysis/de.txt", model.de_list)
+# np.savetxt("analysis/fi.txt", model.fi_list)

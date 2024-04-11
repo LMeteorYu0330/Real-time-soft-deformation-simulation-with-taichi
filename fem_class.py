@@ -100,8 +100,8 @@ class Implicit(LoadModel):
         self.replace_alpha = replace_alpha
         self.rota_mat = ti.Matrix.field(3, 3, dtype=ti.f32, shape=1)
 
-        self.dt = 1.0
-        self.gravity = ti.Vector([0.0, -9.8, 0.0])
+        self.dt = 0.2
+        self.gravity = ti.Vector([0.0, 0.0, 0.0])
         self.e = 7e6  # 杨氏模量
         self.nu = 0.1  # 泊松系数
         self.mu = self.e / (2 * (1 + self.nu))
@@ -133,7 +133,7 @@ class Implicit(LoadModel):
         self.norm_volume()
         self.fem_pre_cal()
         if self.replace_alpha:
-            self.replace(self.replace_direction, self.replace_alpha)
+            self.replace(self.replace_direction, self.replace_alpha, bias=[0, 0, 0])
 
     @ti.kernel
     def reset(self):
@@ -158,7 +158,10 @@ class Implicit(LoadModel):
                 vert.gx *= 1000 / self.V[None] * self.v_norm
 
     @ti.kernel
-    def replace(self, direction: ti.i32, alpha: ti.f32):
+    def replace(self, direction: ti.i32, alpha: ti.f32, bias: ti.math.vec3):
+        for vert in self.mesh.verts.ox:
+            self.mesh.verts.ox[vert] += bias
+            self.mesh.verts.x[vert] += bias
         if direction == 0:
             self.rota_mat[0] = ([[1, 0, 0],
                                  [0, ti.cos(alpha), ti.sin(alpha)],
@@ -169,9 +172,14 @@ class Implicit(LoadModel):
                                  [0, 1, 0],
                                  [ti.sin(alpha), 0, ti.cos(alpha)],
                                  ])
-        else:
+        elif direction == 2:
             self.rota_mat[0] = ([[ti.cos(alpha), ti.sin(alpha), 0],
                                  [-ti.sin(alpha), ti.cos(alpha), 0],
+                                 [0, 0, 1]
+                                 ])
+        else:
+            self.rota_mat[0] = ([[1, 0, 0],
+                                 [0, 1, 0],
                                  [0, 0, 1]
                                  ])
         for vert in self.mesh.verts.ox:
@@ -291,7 +299,7 @@ class Implicit(LoadModel):
             self.b[vert.id] = self.m[vert.id] * vert.v + self.dt * vert.f
 
     @ti.kernel
-    def mat_mul_sim_Co_rotated(self, ret: ti.template(), vel: ti.template()):
+    def  mat_mul_sim_Co_rotated(self, ret: ti.template(), vel: ti.template()):
         for vert in self.mesh.verts:
             ret[vert.id] = vel[vert.id] * self.m[vert.id]
         for cell in self.mesh.cells:
@@ -444,6 +452,7 @@ class Implicit(LoadModel):
 
     @ti.kernel
     def boundary_condition(self):
+        bias = [0.01, -0.19, -0.11]
         # for vert in self.mesh.verts:
         #     if self.give_shape[0] == 1 and vert.id == 2610:
         #         vert.x = vert.gx
@@ -480,14 +489,14 @@ class Implicit(LoadModel):
     def Viscoelasticity(self):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
-            vert.f -= 0.8 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
-        for cell in self.mesh.cells:
-            F = self.F[cell.id].transpose() @ self.F[cell.id]
-            for i in range(3):
-                self.mesh.verts.f[cell.verts[0].id][i] -= 0.1 * F[i, 0]
-                self.mesh.verts.f[cell.verts[1].id][i] -= 0.1 * F[i, 1]
-                self.mesh.verts.f[cell.verts[2].id][i] -= 0.1 * F[i, 2]
-                self.mesh.verts.f[cell.verts[3].id][i] += 0.1 * (F[i, 0] + F[i, 1] + F[i, 2])
+            vert.f -= 0.5 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+        # for cell in self.mesh.cells:
+        #     F = self.F[cell.id].transpose() @ self.F[cell.id]
+        #     for i in range(3):
+        #         self.mesh.verts.f[cell.verts[0].id][i] -= 0.1 * F[i, 0]
+        #         self.mesh.verts.f[cell.verts[1].id][i] -= 0.1 * F[i, 1]
+        #         self.mesh.verts.f[cell.verts[2].id][i] -= 0.1 * F[i, 2]
+        #         self.mesh.verts.f[cell.verts[3].id][i] += 0.1 * (F[i, 0] + F[i, 1] + F[i, 2])
         # E1 = 0.1
         # E2 = 0.1
         # N = 0.9
@@ -508,13 +517,13 @@ class Implicit(LoadModel):
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
-            self.Viscoelasticity()
+            # self.Viscoelasticity()
             # self.fem_get_force_Kelvin()
             # self.fem_get_force_STVK()
             # self.fem_get_force_Neo_Hookean()
             self.fem_get_b()
             self.cg(5, 1e-5)
-            self.boundary_condition()
+            # self.boundary_condition()
             self.decay()
             self.call_F()
 
