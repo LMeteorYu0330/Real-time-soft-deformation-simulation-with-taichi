@@ -101,7 +101,7 @@ class Implicit(LoadModel):
         self.rota_mat = ti.Matrix.field(3, 3, dtype=ti.f32, shape=1)
 
         self.dt = 0.2
-        self.gravity = ti.Vector([0.0, 0.0, 0.0])
+        self.gravity = ti.Vector([0.0, -9.8, 0.0])
         self.e = 7e6  # 杨氏模量
         self.nu = 0.1  # 泊松系数
         self.mu = self.e / (2 * (1 + self.nu))
@@ -299,7 +299,7 @@ class Implicit(LoadModel):
             self.b[vert.id] = self.m[vert.id] * vert.v + self.dt * vert.f
 
     @ti.kernel
-    def  mat_mul_sim_Co_rotated(self, ret: ti.template(), vel: ti.template()):
+    def mat_mul_sim_Co_rotated(self, ret: ti.template(), vel: ti.template()):
         for vert in self.mesh.verts:
             ret[vert.id] = vel[vert.id] * self.m[vert.id]
         for cell in self.mesh.cells:
@@ -459,17 +459,17 @@ class Implicit(LoadModel):
         #
         #     elif self.give_shape[0] == -1:
         #         vert.gx = vert.x
-        bounds = ti.Vector([0.2, 0.1, 0.2])
+        bounds = ti.Vector([0.1, 0.05, 0.2])
         if self.give_shape[0] == 1:
             bounds = ti.Vector([0.07, 0.1, 0.2])
         for vert in self.mesh.verts:
             for i in ti.static(range(3)):
-                if vert.x[i] < -bounds[i]:
-                    vert.x[i] = -bounds[i]
+                if vert.x[i] < -bounds[i] + bias[i]:
+                    vert.x[i] = -bounds[i] + bias[i]
                     if vert.v[i] < 0.0:
                         vert.v[i] = 0.0
-                if vert.x[i] > bounds[i]:
-                    vert.x[i] = bounds[i]
+                if vert.x[i] > bounds[i] + bias[i]:
+                    vert.x[i] = bounds[i] + bias[i]
                     if vert.v[i] > 0.0:
                         vert.v[i] = 0.0
 
@@ -523,7 +523,7 @@ class Implicit(LoadModel):
             # self.fem_get_force_Neo_Hookean()
             self.fem_get_b()
             self.cg(5, 1e-5)
-            # self.boundary_condition()
+            self.boundary_condition()
             self.decay()
             self.call_F()
 

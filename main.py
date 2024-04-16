@@ -23,10 +23,10 @@ def ggui_run(window, canvas, scene, camera):
     scene.ambient_light((0.5, 0.5, 0.5))
     scene.point_light(camera.curr_position, (0.7, 0.7, 0.7))
 
-    scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3))
+    scene.mesh(model.mesh.verts.x, model.indices, color=(1.0, 0.3, 0.3), show_wireframe=False)
     scene.mesh(equipment_model.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
     scene.mesh(body_model.mesh.verts.x, body_model.indices, color=(0.9, 0.85, 0.8), show_wireframe=True)
-
+    scene.particles(cd.line, 0.005, (0.9, 0.9, 0.9))
     # scene.mesh(equipment_model1.mesh.verts.x, equipment_model.indices, color=(0.7, 0.7, 0.7))
     # scene.lines(cd.line, width=1, color=(0, 0, 0))
     # scene.particles(bvt_equipment.face_barycenter, 0.0008, (0.9, 0.9, 0.9))
@@ -49,7 +49,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    # ph.init(1)
+    ph.init(1)
     window, canvas, scene, camera = ggui_init()
     force_vis = ti.Vector.field(3, dtype=ti.f32, shape=2)
 
@@ -78,8 +78,8 @@ if __name__ == '__main__':
         #     print("v:", model.mesh.verts.v)
         #     print("f:", model.mesh.verts.f)
         if window.get_event(ti.ui.PRESS):
-            # if window.event.key == 'p':
-            #     gui_run = not gui_run
+            if window.event.key == 'p':
+                gui_run = not gui_run
             if window.event.key == ti.ui.ESCAPE:
                 break
             if window.event.key == 'f':
@@ -89,8 +89,8 @@ if __name__ == '__main__':
 
         if gui_run:
             cd.run()
-            hap.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
-            # hap.run(0, 0, 0)
+            # hap.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
+            hap.run(0, 0, 0)
             # hap1.run(cd.force[0].x, cd.force[0].y, cd.force[0].z)
             model.substep(1)
         ggui_run(window, canvas, scene, camera)

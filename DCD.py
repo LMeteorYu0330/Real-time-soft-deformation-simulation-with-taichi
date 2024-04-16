@@ -12,7 +12,7 @@ class dcd:
             names['obj' + str(i)] = args[i]
             names['mesh' + str(i)] = args[i].mesh
         self.faces0_num = len(args[0].mesh.faces)
-        self.line = ti.Vector.field(3, dtype=ti.f32, shape=2)
+        self.line = ti.Vector.field(3, dtype=ti.f32, shape=3)
         self.line_dir = ti.Vector.field(3, dtype=ti.f32, shape=1)
         self.force = ti.Vector.field(3, dtype=ti.f32, shape=1)
         self.face0_n = ti.Vector.field(3, dtype=ti.f32, shape=self.faces0_num)
@@ -61,8 +61,7 @@ class dcd:
             # if face0.cells.size == 1:
             if True:
                 self.line_tri_detect(face0, self.line[0], self.line[1])
-        if self.cross_time[0] == 0:
-            self.pre_d0[None][0] = 0
+        self.pre_d0[None][0] = 0
         for face0 in self.mesh0.faces:
             self.intersect(face0)
         self.total_force()
@@ -76,7 +75,7 @@ class dcd:
             self.proxy_T[0] = [0, 0, 0]
         for vert1 in self.mesh1.verts:
             vert1.x += self.proxy_T[0]
-
+        self.line[2] = self.line[0] - self.proxy_T[0]
         self.proxy_position.fill(0)
 
     @ti.func
@@ -133,14 +132,14 @@ class dcd:
         s2 = self.sideOp(L, e2)
         s3 = self.sideOp(L, e3)
         if (s1 > 0 and s2 > 0 and s3 > 0) or (s1 < 0 and s2 < 0 and s3 < 0):
-            l3 = self.plucker(v0, lmin)
-            l2 = self.plucker(lmax, v0)
-            ss1 = self.sideOp(e2, l3)
-            ss2 = self.sideOp(e2, l2)
-            if ss1 < 0 and ss2 < 0:
+            l3 = self.plucker(v1, lmin)
+            l2 = self.plucker(lmax, v1)
+            ss1 = self.sideOp(e3, l3)
+            ss2 = self.sideOp(e3, l2)
+            if (ss1 < 0 and ss2 < 0) or ss1 * ss2 == 0:
                 self.cross_flag0[face0.id] = -1
                 self.cross_time[0] += 1
-            if ss1 > 0 and ss2 > 0:
+            elif (ss1 > 0 and ss2 > 0) or ss1 * ss2 == 0:
                 self.cross_flag0[face0.id] = 1
                 self.cross_time[0] += 1
             # elif ss1 == 0 or ss2 == 0:
@@ -177,7 +176,6 @@ class dcd:
             self.detect(self.obj1.line0, self.obj1.line1)
         self.proxy()
         self.force_print()
-
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
