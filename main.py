@@ -49,7 +49,7 @@ def ggui_run(window, canvas, scene, camera):
 
 if __name__ == '__main__':
     ti.init(arch=ti.gpu)
-    ph.init(1)
+    # ph.init(1)
     window, canvas, scene, camera = ggui_init()
     force_vis = ti.Vector.field(3, dtype=ti.f32, shape=2)
 
@@ -97,5 +97,5 @@ if __name__ == '__main__':
 
 # np.savetxt("analysis/force.txt", cd.force_list)
 # np.savetxt("analysis/d.txt", cd.d_list)
-# np.savetxt("analysis/de.txt", model.de_list)
+np.savetxt("analysis/de.txt", model.de_list)
 # np.savetxt("analysis/fi.txt", model.fi_list)

@@ -95,6 +95,8 @@ class Implicit(LoadModel):
         super().__init__(filename)
         self.de_list = []
         self.fi_list = []
+        self.ana = ti.field(ti.f32, shape=6)
+
         self.v_norm = v_norm
         self.replace_direction = replace_direction
         self.replace_alpha = replace_alpha
@@ -204,7 +206,7 @@ class Implicit(LoadModel):
     def fem_get_force_sim_Co_rotated(self):  # 实时力计算
         for vert in self.mesh.verts:
             vert.fe += self.gravity * self.m[vert.id]
-            vert.f = vert.fe
+            vert.f += vert.fe
             vert.pf = vert.fe  # pf是外力
             # if vert.fe[0] != 0 or vert.fe[1] != 0 or vert.fe[2] != 0:
             #     print(vert.fe)
@@ -459,9 +461,9 @@ class Implicit(LoadModel):
         #
         #     elif self.give_shape[0] == -1:
         #         vert.gx = vert.x
-        bounds = ti.Vector([0.1, 0.05, 0.2])
+        bounds = ti.Vector([0.15, 0.05, 0.2])
         if self.give_shape[0] == 1:
-            bounds = ti.Vector([0.07, 0.1, 0.2])
+            bounds = ti.Vector([0.13, 0.05, 0.2])
         for vert in self.mesh.verts:
             for i in ti.static(range(3)):
                 if vert.x[i] < -bounds[i] + bias[i]:
@@ -489,7 +491,7 @@ class Implicit(LoadModel):
     def Viscoelasticity(self):
         for vert in self.mesh.verts:
             decay = vert.f - vert.pf  # decay是外力+内力-外力，即为纯内力
-            vert.f -= 0.5 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
+            vert.f -= 0.9 * decay  # 外力+内力-0.8*内力，即点力=外力+0.2*内力
         # for cell in self.mesh.cells:
         #     F = self.F[cell.id].transpose() @ self.F[cell.id]
         #     for i in range(3):
@@ -507,17 +509,39 @@ class Implicit(LoadModel):
         #     vert.f -= decay
 
     def call_F(self):
-        de = self.F.to_numpy()
-        fi = self.mesh.verts.f.to_numpy()[0]
-        de = np.sum(de) / len(de)
-        fi = np.sum(fi) / len(fi)
-        self.de_list.append(de)
-        self.fi_list.append(fi)
+        # de = self.F.to_numpy()
+        # fi = self.mesh.verts.f.to_numpy()[0]
+        # de = np.sum(de) / len(de)
+        # fi = np.sum(fi) / len(fi)
+        # self.de_list.append(de)
+        # self.fi_list.append(fi)
+
+        # self.de_list.append((a[3], a[4], a[5]))
+        # self.fi_list.append((a[0], a[1], a[2]))
+
+        self.call_F_sub()
+        ana = self.ana.to_numpy()
+        self.de_list.append(ana)
+
+    @ti.kernel
+    def call_F_sub(self):
+        for cell in self.mesh.cells:
+            if cell.id == 2:
+                F = self.F[cell.id].transpose() @ self.F[cell.id]
+                self.ana[0] = F[0, 0] + F[1, 0] + F[2, 0]  # fx
+                self.ana[1] = F[0, 1] + F[1, 1] + F[2, 1]  # fy
+                self.ana[2] = F[0, 2] + F[1, 2] + F[2, 2]  # fz
+                self.ana[3] = -(self.mesh.verts.f[cell.verts[0].id].x + self.mesh.verts.f[cell.verts[1].id].x + self.mesh.verts.f[
+                    cell.verts[2].id].x) # cx
+                self.ana[4] = -(self.mesh.verts.f[cell.verts[0].id].y + self.mesh.verts.f[cell.verts[1].id].y + self.mesh.verts.f[
+                    cell.verts[2].id].y)  # cy
+                self.ana[5] = -(self.mesh.verts.f[cell.verts[0].id].z + self.mesh.verts.f[cell.verts[1].id].z + self.mesh.verts.f[
+                    cell.verts[2].id].z)  # cz
 
     def substep(self, step):
         for i in range(step):
             self.fem_get_force_sim_Co_rotated()
-            # self.Viscoelasticity()
+            self.Viscoelasticity()
             # self.fem_get_force_Kelvin()
             # self.fem_get_force_STVK()
             # self.fem_get_force_Neo_Hookean()
