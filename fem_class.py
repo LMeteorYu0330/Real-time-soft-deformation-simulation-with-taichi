@@ -484,10 +484,10 @@ class Implicit(LoadModel):
         for cell in self.mesh.cells:
             F = self.F[cell.id].transpose() @ self.F[cell.id]
             for i in range(3):
-                self.mesh.verts.f[cell.verts[0].id][i] -= 0.1 * F[i, 0]
-                self.mesh.verts.f[cell.verts[1].id][i] -= 0.1 * F[i, 1]
-                self.mesh.verts.f[cell.verts[2].id][i] -= 0.1 * F[i, 2]
-                self.mesh.verts.f[cell.verts[3].id][i] += 0.1 * (F[i, 0] + F[i, 1] + F[i, 2])
+                self.mesh.verts.f[cell.verts[0].id][i] -= 0.05 * F[i, 0]
+                self.mesh.verts.f[cell.verts[1].id][i] -= 0.05 * F[i, 1]
+                self.mesh.verts.f[cell.verts[2].id][i] -= 0.05 * F[i, 2]
+                self.mesh.verts.f[cell.verts[3].id][i] += 0.05 * (F[i, 0] + F[i, 1] + F[i, 2])
         # E1 = 0.1
         # E2 = 0.1
         # N = 0.9

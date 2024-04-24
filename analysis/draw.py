@@ -15,8 +15,13 @@ d = d[1::2]
 # plt.plot(result[0], ":", label='f')
 # ddde = -np.sum(ddde, 1)
 result = np.vstack((ddde, d, fi))
-plt.plot(result[0], label='de')
-# plt.plot(result[1], ".:", label='x')
-plt.plot(result[2], ":", label='f')
+for i in range(result.shape[0]):
+    if i != 1:
+        ma = max(result[i, :])
+        mi = min(result[i, :])
+        result[i, :] = (result[i, :] - mi) / (ma - mi)
+plt.plot(result[0], label='c')
+plt.plot(result[1]+0.2, ".:", label='x')
+# plt.plot(result[2], ":", label='f')
 plt.legend(fontsize=15)
 plt.show()
